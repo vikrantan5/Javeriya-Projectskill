@@ -132,7 +132,41 @@ class GroqAIService:
                 "total_duration_weeks": 12
             }
     
-    async def chatbot_response(self, user_message: str, context: List[Dict[str, str]] = None) -> str:
+    async def generate_learning_response(self, message: str, chat_history: List[Dict[str, str]], user_skills: List[Dict[str, str]]) -> str:
+        """Generate contextual learning response"""
+        try:
+            skills_str = ", ".join([f"{s['skill_name']} ({s['skill_type']})" for s in user_skills]) if user_skills else "No skills listed yet"
+            
+            system_prompt = f"""You are TalentBot, an AI learning assistant for TalentConnect platform.
+            
+            User's current skills: {skills_str}
+            
+            You help students with:
+            - Learning roadmaps and study plans
+            - Skill recommendations
+            - Resource suggestions
+            - Academic guidance
+            - Motivation and encouragement
+            
+            Be helpful, encouraging, and concise. Reference their skills when relevant."""
+            
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            # Add chat history
+            for chat in chat_history[-5:]:  # Last 5 messages for context
+                messages.append({"role": chat['role'], "content": chat['message']})
+            
+            messages.append({"role": "user", "content": message})
+            
+            response = await self.chat_completion(messages, temperature=0.7, max_tokens=512)
+            return response
+        except Exception as e:
+            logger.error(f"Learning response error: {str(e)}")
+            return "I'm here to help with your learning journey! How can I assist you today?"
+    
+    async def recommend_skills(self, user_skills: List[str], limit: int = 5) -> List[Dict[str, str]]:
+        """Recommend skills based on current skills"""
+        return await self.get_skill_recommendations(user_skills, limit)
         """Get chatbot response for learning assistance"""
         try:
             system_prompt = """You are TalentBot, an AI learning assistant for TalentConnect platform. 

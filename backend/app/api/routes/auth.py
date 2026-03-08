@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import UserCreate, UserLogin, UserResponse, Token
-from app.utils.auth import get_password_hash, verify_password, create_access_token
-# Don't import get_current_user here to avoid circular imports
+from app.utils.auth import get_password_hash, verify_password, create_access_token, get_current_user
 from app.database import get_db
 from app.services.email_service import email_service
 from datetime import timedelta
@@ -152,12 +151,9 @@ async def login(credentials: UserLogin):
 
 # Import get_current_user here to avoid circular import
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user_id: str = Depends(lambda: Depends(get_current_user_local))):
+async def get_current_user_info(current_user_id: str = Depends(get_current_user)):
     """Get current user information"""
     try:
-        # Import here to avoid circular dependency
-        from app.utils.auth import get_current_user as get_current_user_local
-        
         db = get_db()
         
         user_result = db.table('users').select('*').eq('id', current_user_id).execute()

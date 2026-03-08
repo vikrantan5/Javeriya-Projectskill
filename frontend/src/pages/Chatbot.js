@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
-import { chatService } from '../services/apiService';
+import { aiService } from '../services/apiService'; // Change this line
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
@@ -34,7 +34,8 @@ const Chatbot = () => {
     
     setLoading(true);
     try {
-      const response = await chatService.sendMessage(userMessage, sessionId);
+      // Use aiService instead of chatService
+      const response = await aiService.sendMessage(userMessage, sessionId);
       setMessages((prev) => [...prev, { role: 'assistant', content: response.response }]);
     } catch (error) {
       console.error('Chat error:', error);
@@ -49,6 +50,7 @@ const Chatbot = () => {
     setLoading(false);
   };
 
+  // ... rest of your component remains the same
   const quickQuestions = [
     'How do I start learning DSA?',
     'Recommend skills for web development',
