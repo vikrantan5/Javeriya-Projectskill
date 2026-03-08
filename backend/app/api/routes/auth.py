@@ -16,15 +16,20 @@ def validate_password(password: str) -> tuple[bool, str]:
     """
     Validate password strength and length
     Returns (is_valid, error_message)
+       Note: Passwords longer than 72 bytes are automatically pre-hashed with SHA-256
+    before bcrypt hashing, so we don't reject them here. We only enforce a 
+    reasonable maximum to prevent abuse.
     """
-    # Check length
+    # Check minimum length
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
     
-    # Check byte length (bcrypt limitation)
+   # Check maximum length (prevent abuse, but allow passwords over 72 bytes)
+    # The pre_hash_password function in auth.py will handle long passwords via SHA-256
     password_bytes = password.encode('utf-8')
-    if len(password_bytes) > 72:
-        return False, f"Password is too long. Maximum 72 bytes allowed. Current length: {len(password_bytes)} bytes"
+    if len(password_bytes) > 1000:  # Reasonable maximum to prevent abuse
+        return False, f"Password is too long. Maximum 1000 bytes allowed. Current length: {len(password_bytes)} bytes"
+    
     
     # Check for uppercase
     if not any(c.isupper() for c in password):
@@ -79,7 +84,15 @@ async def register(user_data: UserCreate):
         logger.info(f"Registration attempt - Password length: {len(user_data.password)} chars, {len(password_bytes)} bytes")
         
         # Hash password (with our pre-hashing function that handles long passwords)
-        hashed_password = get_password_hash(user_data.password)
+         # Note: Passwords over 72 bytes will be automatically pre-hashed with SHA-256
+        try:
+            hashed_password = get_password_hash(user_data.password)
+        except ValueError as e:
+            logger.error(f"Password hashing failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
         
         # Create user
         new_user = {
