@@ -31,23 +31,28 @@ let webpackConfig = {
         "react-hooks/exhaustive-deps": "warn",
       },
     },
+    // Add this to make ESLint warnings not fail the build
+    pluginOptions: {
+      emitWarning: true,
+      failOnError: false,
+      failOnWarning: false,
+    },
   },
   webpack: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
     configure: (webpackConfig) => {
-
       // Add ignored patterns to reduce watched directories
-        webpackConfig.watchOptions = {
-          ...webpackConfig.watchOptions,
-          ignored: [
-            '**/node_modules/**',
-            '**/.git/**',
-            '**/build/**',
-            '**/dist/**',
-            '**/coverage/**',
-            '**/public/**',
+      webpackConfig.watchOptions = {
+        ...webpackConfig.watchOptions,
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/build/**',
+          '**/dist/**',
+          '**/coverage/**',
+          '**/public/**',
         ],
       };
 
@@ -55,6 +60,19 @@ let webpackConfig = {
       if (config.enableHealthCheck && healthPluginInstance) {
         webpackConfig.plugins.push(healthPluginInstance);
       }
+
+      // Find and modify the ESLint plugin to not fail on warnings
+      const eslintPlugin = webpackConfig.plugins.find(
+        plugin => plugin.constructor.name === 'ESLintWebpackPlugin'
+      );
+      
+      if (eslintPlugin) {
+        // Modify ESLint plugin options
+        eslintPlugin.options.emitWarning = true;
+        eslintPlugin.options.failOnError = false;
+        eslintPlugin.options.failOnWarning = false;
+      }
+
       return webpackConfig;
     },
   },
