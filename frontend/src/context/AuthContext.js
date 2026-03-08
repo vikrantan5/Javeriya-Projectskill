@@ -3,6 +3,7 @@ import { authService } from '../services/apiService';
 
 const AuthContext = createContext();
 
+// This is already exporting useAuth
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -51,10 +52,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔴 FOCUS HERE - THIS IS THE REGISTER FUNCTION THAT NEEDS TO BE UPDATED
+  // UPDATED register function with password truncation
   const register = async (userData) => {
     try {
-      // IMPORTANT: Truncate password to 72 characters to avoid bcrypt error
+      // Truncate password to 72 characters to avoid bcrypt error
       const processedUserData = {
         ...userData,
         password: userData.password.length > 72 
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Registration error:', error);
       
-      // Check for specific bcrypt error
+      // Handle bcrypt error specifically
       if (error.response?.data?.detail?.includes('72 bytes')) {
         return { 
           success: false, 
@@ -111,5 +112,5 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Add explicit exports at the bottom
-export { useAuth, AuthProvider };
+// ✅ REMOVE THIS LINE - it's causing the duplicate export error
+// export { useAuth, AuthProvider };
