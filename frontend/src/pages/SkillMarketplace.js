@@ -32,7 +32,7 @@ const SkillMarketplace = () => {
 
   const loadMySkills = async () => {
     try {
-      const data = await skillService.getSkills();
+      const data = await skillService.getMySkills();
       setMySkills(data);
     } catch (error) {
       console.error('Error loading skills:', error);
@@ -43,7 +43,7 @@ const SkillMarketplace = () => {
     if (!searchSkill.trim()) return;
     setLoading(true);
     try {
-      const data = await skillService.findMentors(searchSkill);
+      const data = await skillService.searchSkills(searchSkill, 'offered');
       setMentors(data);
     } catch (error) {
       console.error('Error finding mentors:', error);

@@ -15,7 +15,7 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       const [usersData, analyticsData] = await Promise.all([
-        adminService.getUsers().catch(() => []),
+         adminService.getAllUsers().catch(() => []),
         adminService.getAnalytics().catch(() => null),
       ]);
       setUsers(Array.isArray(usersData) ? usersData : []);

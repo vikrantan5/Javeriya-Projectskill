@@ -23,7 +23,16 @@ const TaskMarketplace = () => {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const data = await taskService.getTasks(activeTab);
+      let data;
+      if (activeTab === 'all') {
+        data = await taskService.getAllTasks('open');
+      } else if (activeTab === 'my-tasks') {
+        data = await taskService.getMyTasks();
+      } else if (activeTab === 'accepted') {
+        data = await taskService.getAcceptedTasks();
+      } else {
+        data = await taskService.getAllTasks(activeTab);
+      }
       setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading tasks:', error);

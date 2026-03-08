@@ -13,7 +13,7 @@ const SessionBooking = () => {
   const loadSessions = async () => {
     setLoading(true);
     try {
-      const data = await sessionService.getSessions();
+     const data = await sessionService.getMySessions();
       setSessions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading sessions:', error);

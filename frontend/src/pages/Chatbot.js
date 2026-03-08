@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import { aiService } from '../services/apiService'; // Change this line
 
+// Helper function to generate UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const Chatbot = () => {
   const [messages, setMessages] = useState([
     {
@@ -11,7 +20,7 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => 'session_' + Date.now());
+   const [sessionId] = useState(() => generateUUID());
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {

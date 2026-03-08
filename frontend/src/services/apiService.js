@@ -204,6 +204,14 @@ export const aiService = {
     });
     return response.data;
   },
+   // Alias for chat method to maintain compatibility
+  sendMessage: async (message, sessionId = null) => {
+    const response = await api.post('/api/ai/chatbot', {
+      message: message,
+      session_id: sessionId
+    });
+    return response.data;
+  },
 
   getChatHistory: async (sessionId) => {
     const response = await api.get(`/api/ai/chat-history/${sessionId}`);
