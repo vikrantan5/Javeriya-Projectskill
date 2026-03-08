@@ -1,0 +1,56 @@
+from fastapi import FastAPI, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if settings.DEBUG else logging.WARNING,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Create FastAPI app
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="TalentConnect - Intelligent Student Collaboration & Academic Support Platform"
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS.split(',') if settings.CORS_ORIGINS != "*" else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create API router with /api prefix
+api_router = APIRouter(prefix="/api")
+
+# Import and include route modules
+from app.api.routes import auth
+
+api_router.include_router(auth.router)
+
+# Include API router in main app
+app.include_router(api_router)
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to TalentConnect API",
+        "version": settings.APP_VERSION,
+        "docs": "/docs"
+    }
+
+# Health check
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "TalentConnect"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+pydantic-settings
+supabase
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+groq
+razorpay
+sendgrid
+scikit-learn
+numpy
+pandas
+requests
+email-validator
