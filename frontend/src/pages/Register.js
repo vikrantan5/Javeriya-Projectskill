@@ -30,7 +30,8 @@ import {
   Calendar,
   Award,
   Check,
-  ChevronRight
+  ChevronRight,
+  Info
 } from 'lucide-react';
 
 const Register = () => {
@@ -48,16 +49,32 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordByteLength, setPasswordByteLength] = useState(0);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [passwordError, setPasswordError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Password strength checker
+  // Password strength checker with byte length validation
   useEffect(() => {
     if (!formData.password) {
       setPasswordStrength(0);
+      setPasswordByteLength(0);
+      setPasswordError('');
       return;
+    }
+
+    // Check byte length (bcrypt limitation)
+    const byteLength = new TextEncoder().encode(formData.password).length;
+    setPasswordByteLength(byteLength);
+    
+    if (byteLength > 72) {
+      setPasswordError('Password is too long. Maximum 72 characters allowed.');
+      setPasswordStrength(0);
+      return;
+    } else {
+      setPasswordError('');
     }
 
     let strength = 0;
@@ -98,14 +115,24 @@ const Register = () => {
       setError('Username must be at least 3 characters long');
       return false;
     }
+    
+    // Password validation
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters long');
       return false;
     }
-    if (passwordStrength < 75) {
+    
+    const byteLength = new TextEncoder().encode(formData.password).length;
+    if (byteLength > 72) {
+      setError('Password is too long. Maximum 72 characters allowed.');
+      return false;
+    }
+    
+    if (passwordStrength < 75 && passwordStrength > 0) {
       setError('Please choose a stronger password');
       return false;
     }
+    
     if (!agreeTerms) {
       setError('You must agree to the Terms of Service');
       return false;
@@ -139,6 +166,7 @@ const Register = () => {
   };
 
   const getPasswordStrengthColor = () => {
+    if (passwordByteLength > 72) return 'bg-red-500';
     if (passwordStrength <= 25) return 'bg-red-500';
     if (passwordStrength <= 50) return 'bg-orange-500';
     if (passwordStrength <= 75) return 'bg-yellow-500';
@@ -146,6 +174,7 @@ const Register = () => {
   };
 
   const getPasswordStrengthText = () => {
+    if (passwordByteLength > 72) return 'Too Long';
     if (passwordStrength <= 25) return 'Weak';
     if (passwordStrength <= 50) return 'Fair';
     if (passwordStrength <= 75) return 'Good';
@@ -389,8 +418,9 @@ const Register = () => {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       required
+                      maxLength={72} // Add maxlength attribute for browser validation
                       className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-indigo-300/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                      placeholder="Create a strong password"
+                      placeholder="Create a strong password (max 72 chars)"
                       value={formData.password}
                       onChange={handleChange}
                       data-testid="password-input"
@@ -404,18 +434,37 @@ const Register = () => {
                     </button>
                   </div>
 
-                  {/* Password Strength Meter */}
+                  {/* Password Strength and Length Meter */}
                   {formData.password && (
                     <div className="mt-2">
+                      {/* Length warning */}
+                      {passwordByteLength > 72 && (
+                        <div className="flex items-center gap-2 mb-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
+                          <Info className="w-4 h-4 text-red-400 flex-shrink-0" />
+                          <span className="text-xs text-red-300">
+                            Password exceeds 72 character limit. Current length: {passwordByteLength} bytes
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Strength meter */}
                       <div className="flex items-center gap-2 mb-1">
                         <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                           <div 
                             className={`h-full ${getPasswordStrengthColor()} transition-all duration-300`}
-                            style={{ width: `${passwordStrength}%` }}
+                            style={{ width: `${passwordByteLength > 72 ? 100 : passwordStrength}%` }}
                           ></div>
                         </div>
                         <span className="text-xs text-indigo-300">{getPasswordStrengthText()}</span>
                       </div>
+                      
+                      {/* Character count */}
+                      <div className="flex justify-between text-xs text-indigo-300 mb-2">
+                        <span>Characters: {formData.password.length}</span>
+                        <span>Bytes: {passwordByteLength}/72</span>
+                      </div>
+                      
+                      {/* Requirements */}
                       <ul className="text-xs text-indigo-300 space-y-1">
                         <li className="flex items-center gap-1">
                           {formData.password.length >= 8 ? (
@@ -440,6 +489,14 @@ const Register = () => {
                             <XCircle className="w-3 h-3 text-gray-500" />
                           )}
                           One number
+                        </li>
+                        <li className="flex items-center gap-1">
+                          {passwordByteLength <= 72 ? (
+                            <CheckCircle className="w-3 h-3 text-green-400" />
+                          ) : (
+                            <XCircle className="w-3 h-3 text-red-400" />
+                          )}
+                          Maximum 72 bytes (current: {passwordByteLength})
                         </li>
                       </ul>
                     </div>
@@ -525,6 +582,12 @@ const Register = () => {
                     <p className="text-sm text-indigo-200 mb-2">Email: {formData.email}</p>
                     <p className="text-sm text-indigo-200 mb-2">Username: {formData.username}</p>
                     <p className="text-sm text-indigo-200">Full Name: {formData.full_name || 'Not provided'}</p>
+                    <p className="text-sm text-indigo-200 mt-2">
+                      Password: {'•'.repeat(Math.min(formData.password.length, 10))} 
+                      <span className="ml-2 text-xs text-indigo-300">
+                        ({formData.password.length} chars, {passwordByteLength} bytes)
+                      </span>
+                    </p>
                   </div>
                 </div>
 
@@ -571,7 +634,7 @@ const Register = () => {
                 ) : (
                   <button
                     type="submit"
-                    disabled={loading || !agreeTerms}
+                    disabled={loading || !agreeTerms || passwordByteLength > 72}
                     className="flex-1 py-4 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-green-500/25 flex items-center justify-center gap-2"
                     data-testid="register-submit-button"
                   >

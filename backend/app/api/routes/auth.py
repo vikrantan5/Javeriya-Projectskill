@@ -12,10 +12,50 @@ logger = logging.getLogger(__name__)
 # Create the router
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+def validate_password(password: str) -> tuple[bool, str]:
+    """
+    Validate password strength and length
+    Returns (is_valid, error_message)
+    """
+    # Check length
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    
+    # Check byte length (bcrypt limitation)
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        return False, f"Password is too long. Maximum 72 bytes allowed. Current length: {len(password_bytes)} bytes"
+    
+    # Check for uppercase
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter"
+    
+    # Check for lowercase
+    if not any(c.islower() for c in password):
+        return False, "Password must contain at least one lowercase letter"
+    
+    # Check for numbers
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one number"
+    
+    # Check for special characters (optional but recommended)
+    if not any(c in '!@#$%^&*(),.?":{}|<>' for c in password):
+        return False, "Password should contain at least one special character for better security"
+    
+    return True, ""
+
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate):
-    """Register a new user"""
+    """Register a new user with password validation"""
     try:
+        # Validate password BEFORE any database operations
+        is_valid_password, password_error = validate_password(user_data.password)
+        if not is_valid_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=password_error
+            )
+        
         db = get_db()
         
         # Check if email already exists
@@ -34,7 +74,11 @@ async def register(user_data: UserCreate):
                 detail="Username already taken"
             )
         
-        # Hash password
+        # Log password length for monitoring (don't log the actual password!)
+        password_bytes = user_data.password.encode('utf-8')
+        logger.info(f"Registration attempt - Password length: {len(user_data.password)} chars, {len(password_bytes)} bytes")
+        
+        # Hash password (with our pre-hashing function that handles long passwords)
         hashed_password = get_password_hash(user_data.password)
         
         # Create user
@@ -90,6 +134,14 @@ async def register(user_data: UserCreate):
         raise
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
+        
+        # Handle bcrypt specific error
+        if "password cannot be longer than 72 bytes" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password is too long. Please use a shorter password (max 72 characters)."
+            )
+            
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Registration failed: {str(e)}"
@@ -119,8 +171,15 @@ async def login(credentials: UserLogin):
                 detail="Account has been banned. Please contact support."
             )
         
-        # Verify password
-        if not verify_password(credentials.password, user['password_hash']):
+        # Verify password (with pre-hashing support)
+        try:
+            password_valid = verify_password(credentials.password, user['password_hash'])
+        except Exception as e:
+            logger.error(f"Password verification error: {str(e)}")
+            # If verification fails due to bcrypt error, still return unauthorized
+            password_valid = False
+        
+        if not password_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
@@ -149,7 +208,6 @@ async def login(credentials: UserLogin):
             detail=f"Login failed: {str(e)}"
         )
 
-# Import get_current_user here to avoid circular import
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user_id: str = Depends(get_current_user)):
     """Get current user information"""
@@ -174,3 +232,24 @@ async def get_current_user_info(current_user_id: str = Depends(get_current_user)
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+# Optional: Add a password strength test endpoint (useful for debugging)
+@router.post("/validate-password")
+async def validate_password_endpoint(password: str):
+    """
+    Test endpoint to validate password strength
+    Useful for frontend integration testing
+    """
+    is_valid, message = validate_password(password)
+    if is_valid:
+        return {
+            "valid": True,
+            "message": "Password meets all requirements",
+            "bytes": len(password.encode('utf-8'))
+        }
+    else:
+        return {
+            "valid": False,
+            "message": message,
+            "bytes": len(password.encode('utf-8'))
+        }
