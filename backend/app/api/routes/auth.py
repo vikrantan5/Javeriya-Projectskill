@@ -148,12 +148,7 @@ async def register(user_data: UserCreate):
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
         
-        # Handle bcrypt specific error
-        if "password cannot be longer than 72 bytes" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password is too long. Please use a shorter password (max 72 characters)."
-            )
+  
             
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
