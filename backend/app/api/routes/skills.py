@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from app.models.schemas import SkillCreate, SkillResponse
 from app.utils.auth import get_current_user
 from app.database import get_db
+from app.services.resume_parser import resume_parser
 from typing import List
 import logging
 
@@ -67,6 +68,100 @@ async def get_my_skills(current_user_id: str = Depends(get_current_user)):
     
     except Exception as e:
         logger.error(f"Error fetching skills: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+@router.post("/upload-resume")
+async def upload_resume(
+    file: UploadFile = File(...),
+    auto_add: bool = True,
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    Upload resume (PDF or DOCX) and extract skills automatically
+    
+    Args:
+        file: Resume file (PDF or DOCX)
+        auto_add: If True, automatically add extracted skills to user profile
+        current_user_id: Current authenticated user
+    """
+    try:
+        # Validate file type
+        allowed_extensions = ['pdf', 'docx', 'doc']
+        file_extension = file.filename.split('.')[-1].lower()
+        
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported file format. Allowed: {', '.join(allowed_extensions)}"
+            )
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Parse resume and extract skills
+        parse_result = resume_parser.parse_resume(file_content, file.filename)
+        
+        if not parse_result['success']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to parse resume: {parse_result.get('error', 'Unknown error')}"
+            )
+        
+        # Auto-add skills if requested
+        added_skills = []
+        skipped_skills = []
+        
+        if auto_add and parse_result['skills']:
+            db = get_db()
+            
+            # Get existing skills for user
+            existing_skills_result = db.table('user_skills').select('skill_name').eq('user_id', current_user_id).execute()
+            existing_skill_names = {skill['skill_name'].lower() for skill in existing_skills_result.data} if existing_skills_result.data else set()
+            
+            # Add new skills
+            for skill_name in parse_result['skills']:
+                if skill_name.lower() not in existing_skill_names:
+                    try:
+                        new_skill = {
+                            'user_id': current_user_id,
+                            'skill_name': skill_name,
+                            'skill_type': 'offered',  # Default to offered
+                            'skill_level': 'intermediate',  # Default level
+                            'is_verified': False
+                        }
+                        
+                        result = db.table('user_skills').insert(new_skill).execute()
+                        if result.data:
+                            added_skills.append(skill_name)
+                    except Exception as e:
+                        logger.error(f"Error adding skill {skill_name}: {str(e)}")
+                        skipped_skills.append(skill_name)
+                else:
+                    skipped_skills.append(skill_name)
+        
+        return {
+            "message": "Resume parsed successfully",
+            "parse_result": {
+                "total_skills_found": parse_result['total_skills_found'],
+                "skills": parse_result['skills'],
+                "categorized_skills": parse_result['categorized_skills']
+            },
+            "auto_add_result": {
+                "added_count": len(added_skills),
+                "skipped_count": len(skipped_skills),
+                "added_skills": added_skills,
+                "skipped_skills": skipped_skills
+            } if auto_add else None
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading resume: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

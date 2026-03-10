@@ -30,7 +30,8 @@ app.add_middleware(
 api_router = APIRouter(prefix="/api")
 
 # Import and include route modules
-from app.api.routes import auth, skills, sessions, tasks, reviews, payments, ai, admin, notifications, users
+from app.api.routes import auth, skills, sessions, tasks, reviews, payments, ai, admin, notifications, users, reputation
+
 
 api_router.include_router(auth.router)
 api_router.include_router(skills.router)
@@ -42,6 +43,7 @@ api_router.include_router(ai.router)
 api_router.include_router(admin.router)
 api_router.include_router(notifications.router)
 api_router.include_router(users.router)
+api_router.include_router(reputation.router)
 
 # Include API router in main app
 app.include_router(api_router)
