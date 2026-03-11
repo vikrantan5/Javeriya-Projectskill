@@ -482,6 +482,20 @@ const SkillMarketplace = () => {
                             </div>
                           </div>
                         </div>
+                             {/* Verify Skill Button */}
+                        {!skill.is_verified && skill.skill_type === 'offered' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSkillQuizModal({ show: true, skill: skill.skill_name, level: skill.skill_level });
+                            }}
+                            className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+                            data-testid="verify-skill-button"
+                          >
+                            <Shield className="w-4 h-4" />
+                            Verify Skill
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -698,7 +712,7 @@ const SkillMarketplace = () => {
                         {/* Action Buttons */}
                         <div className="flex gap-2">
                            <button
-                            onClick={() => setFindMentorModal({ show: true, skill: skill.skill_name })}
+                            onClick={() => setFindMentorModal({ show: true, skill: mentor.skill_name || searchSkill })}
                             className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium text-sm flex items-center justify-center gap-2"
                             data-testid="find-mentor-button"
                           >
@@ -1161,6 +1175,17 @@ const SkillMarketplace = () => {
         isOpen={findMentorModal.show}
         onClose={() => setFindMentorModal({ show: false, skill: '' })}
         skillName={findMentorModal.skill}
+      />
+        {/* Skill Quiz Modal */}
+      <SkillQuizModal 
+        isOpen={skillQuizModal.show}
+        onClose={() => setSkillQuizModal({ show: false, skill: '', level: 'intermediate' })}
+        skillName={skillQuizModal.skill}
+        skillLevel={skillQuizModal.level}
+        onSuccess={() => {
+          showNotification('Skill verified successfully! 🎉', 'success');
+          loadMySkills();
+        }}
       />
 
       <style jsx>{`

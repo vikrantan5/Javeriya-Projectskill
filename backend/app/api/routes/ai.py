@@ -7,10 +7,16 @@ from app.ai.skill_matching import skill_matcher
 from app.ai.fraud_detection import fraud_detector
 import logging
 import uuid
+from pydantic import BaseModel
+from datetime import datetime, timezone
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai", tags=["AI"])
+
+class QuizSubmissionPayload(BaseModel):
+    answers: List[int]
 
 @router.post("/chatbot", response_model=ChatResponse)
 async def chat_with_bot(chat_data: ChatMessage, current_user_id: str = Depends(get_current_user)):
@@ -128,33 +134,75 @@ async def recommend_skills(request: SkillRecommendationRequest, current_user_id:
         )
 
 @router.get("/generate-quiz/{skill_name}")
-async def generate_skill_quiz(skill_name: str, skill_level: str, current_user_id: str = Depends(get_current_user)):
+async def generate_skill_quiz(
+    skill_name: str,
+    skill_level: str,
+    current_user_id: str = Depends(get_current_user)
+):
     """Generate AI-powered skill verification quiz"""
     try:
         db = get_db()
-        
+
         # Generate quiz using AI
         quiz_data = await groq_service.generate_skill_quiz(
             skill_name=skill_name,
             skill_level=skill_level
         )
-        
+
+        raw_questions = quiz_data.get("questions", [])
+        normalized_questions = []
+        public_questions = []
+
+        answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
+
+        for question in raw_questions:
+            options = question.get("options", [])
+
+            if isinstance(options, dict):
+                option_list = [
+                    options.get("A", ""),
+                    options.get("B", ""),
+                    options.get("C", ""),
+                    options.get("D", "")
+                ]
+            else:
+                option_list = options
+
+            correct_answer = question.get("correct_answer", 0)
+
+            if isinstance(correct_answer, str):
+                correct_answer = answer_map.get(correct_answer.upper(), 0)
+
+            normalized_question = {
+                "question": question.get("question", ""),
+                "options": option_list,
+                "correct_answer": int(correct_answer),
+                "explanation": question.get("explanation", "")
+            }
+
+            normalized_questions.append(normalized_question)
+
+            public_questions.append({
+                "question": normalized_question["question"],
+                "options": normalized_question["options"]
+            })
+
         # Create test record
         test_record = {
-            'user_id': current_user_id,
-            'skill_name': skill_name,
-            'questions': quiz_data['questions'],
-            'total_questions': len(quiz_data['questions'])
+            "user_id": current_user_id,
+            "skill_name": skill_name,
+            "questions": normalized_questions,
+            "total_questions": len(normalized_questions)
         }
-        
-        test_result = db.table('skill_verification_tests').insert(test_record).execute()
-        
+
+        test_result = db.table("skill_verification_tests").insert(test_record).execute()
+
         return {
-            "test_id": test_result.data[0]['id'],
-            "questions": quiz_data['questions'],
-            "total_questions": len(quiz_data['questions'])
+            "test_id": test_result.data[0]["id"],
+            "questions": public_questions,
+            "total_questions": len(public_questions)
         }
-    
+
     except Exception as e:
         logger.error(f"Error generating quiz: {str(e)}")
         raise HTTPException(
