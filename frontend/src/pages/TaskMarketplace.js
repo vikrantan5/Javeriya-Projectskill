@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { taskService, paymentService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
+import RealtimeChat from '../components/RealtimeChat';
+import PaymentModal from '../components/PaymentModal';
 import {
   Briefcase,
   Plus,
@@ -85,6 +87,11 @@ const TaskMarketplace = () => {
     attachments: []
   });
 
+    const [showChat, setShowChat] = useState(false);
+  const [chatTask, setChatTask] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentTask, setPaymentTask] = useState(null);
+
   useEffect(() => {
     loadTasks();
   }, [activeTab]);
@@ -134,6 +141,21 @@ const TaskMarketplace = () => {
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: '' }), 3000);
+  };
+
+  const handleOpenChat = (task) => {
+    setChatTask(task);
+    setShowChat(true);
+  };
+
+  const handleOpenPayment = (task) => {
+    setPaymentTask(task);
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    showNotification('Payment successful! Funds are held in escrow.', 'success');
+    loadTasks();
   };
 
   const handleCreateTask = async (e) => {
@@ -1212,6 +1234,28 @@ const TaskMarketplace = () => {
           </div>
         )}
       </div>
+
+
+      {/* Chat Modal */}
+      {showChat && chatTask && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl h-[600px]">
+            <RealtimeChat
+              roomType="task"
+              roomId={chatTask.id}
+              onClose={() => setShowChat(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        task={paymentTask}
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
+        onSuccess={handlePaymentSuccess}
+      />
 
       <style jsx>{`
         @keyframes blob {

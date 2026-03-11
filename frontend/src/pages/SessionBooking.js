@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { sessionService } from '../services/apiService';
+import RealtimeChat from '../components/RealtimeChat';
 import {
   Calendar,
   Clock,
@@ -71,6 +72,10 @@ const SessionBooking = () => {
     cancelled: 0,
     pending: 0
   });
+
+
+   const [showChat, setShowChat] = useState(false);
+  const [chatSession, setChatSession] = useState(null);
 
   useEffect(() => {
     loadSessions();
@@ -746,6 +751,20 @@ const SessionBooking = () => {
           animation-delay: 2s;
         }
       `}</style>
+
+
+      {/* Chat Modal for Sessions */}
+      {showChat && chatSession && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl h-[600px]">
+            <RealtimeChat
+              roomType="session"
+              roomId={chatSession.id}
+              onClose={() => setShowChat(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

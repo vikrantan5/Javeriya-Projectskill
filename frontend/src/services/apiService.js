@@ -397,3 +397,58 @@ export const adminService = {
     return response.data;
   },
 };
+
+
+
+// ============================================
+// ROADMAP SERVICE
+// ============================================
+export const roadmapService = {
+  generate: async (careerGoal, currentSkills = []) => {
+    const response = await api.post('/api/roadmap/generate', {
+      career_goal: careerGoal,
+      current_skills: currentSkills
+    });
+    return response.data;
+  },
+
+  getMyRoadmaps: async (activeOnly = true) => {
+    const response = await api.get(`/api/roadmap/my-roadmaps?active_only=${activeOnly}`);
+    return response.data;
+  },
+
+  getRoadmapById: async (roadmapId) => {
+    const response = await api.get(`/api/roadmap/${roadmapId}`);
+    return response.data;
+  },
+
+  updateProgress: async (roadmapId, currentStep, completionPercentage) => {
+    const response = await api.patch(`/api/roadmap/${roadmapId}/progress`, {
+      current_step: currentStep,
+      completion_percentage: completionPercentage
+    });
+    return response.data;
+  },
+
+  complete: async (roadmapId) => {
+    const response = await api.post(`/api/roadmap/${roadmapId}/complete`);
+    return response.data;
+  },
+};
+
+// ============================================
+// REALTIME SERVICE
+// ============================================
+export const realtimeService = {
+  getHistory: async (roomType, roomId) => {
+    const response = await api.get(`/api/realtime/history/${roomType}/${roomId}`);
+    return response.data;
+  },
+
+  buildWebSocketUrl: (roomType, roomId, token) => {
+    const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss' : 'ws';
+    const baseUrl = API_BASE_URL.replace(/^https?:\/\//, '');
+    return `${wsProtocol}://${baseUrl}/api/realtime/ws/${roomType}/${roomId}?token=${token}`;
+  },
+};

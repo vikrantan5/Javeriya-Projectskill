@@ -272,6 +272,7 @@ async def accept_skill_exchange_task(
     """
     Accept a skill exchange task with exact reciprocal matching:
     A offers X wants Y, B offers Y wants X.
+    If acceptor doesn't have reciprocal task, one is auto-created.
     """
     try:
         db = get_db()
@@ -286,19 +287,34 @@ async def accept_skill_exchange_task(
         if target_task['status'] != 'open':
             raise HTTPException(status_code=400, detail="Exchange task is not open")
 
+        # Check for existing reciprocal task
         reciprocal_query = db.table('skill_exchange_tasks').select('*').eq('creator_id', current_user_id).eq('status', 'open').eq('skill_offered', target_task['skill_requested']).eq('skill_requested', target_task['skill_offered'])
         if payload.reciprocal_task_id:
             reciprocal_query = reciprocal_query.eq('id', payload.reciprocal_task_id)
 
         reciprocal_result = reciprocal_query.limit(1).execute()
+        
+        # If no reciprocal task exists, create one automatically
         if not reciprocal_result.data:
-            raise HTTPException(
-                status_code=400,
-                detail="Exact reciprocal skill task not found. Create one first (offer requested skill and request offered skill)."
-            )
+            logger.info(f"Auto-creating reciprocal task for user {current_user_id}")
+            new_reciprocal = {
+                'creator_id': current_user_id,
+                'skill_offered': target_task['skill_requested'],
+                'skill_requested': target_task['skill_offered'],
+                'description': f"Auto-created for exchange match with {target_task.get('skill_offered')} ↔ {target_task.get('skill_requested')}",
+                'status': 'open'
+            }
+            reciprocal_create_result = db.table('skill_exchange_tasks').insert(new_reciprocal).execute()
+            if not reciprocal_create_result.data:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create reciprocal exchange task"
+                )
+            reciprocal_task = reciprocal_create_result.data[0]
+        else:
+            reciprocal_task = reciprocal_result.data[0]
 
-        reciprocal_task = reciprocal_result.data[0]
-
+        # Update both tasks to matched status
         db.table('skill_exchange_tasks').update({
             'status': 'matched',
             'matched_user_id': current_user_id,
@@ -313,34 +329,42 @@ async def accept_skill_exchange_task(
             'updated_at': utc_now_iso()
         }).eq('id', reciprocal_task['id']).execute()
 
+        # Create session request for coordination
         exchange_session_request = {
             'sender_id': current_user_id,
             'receiver_id': target_task['creator_id'],
             'skill_offered': reciprocal_task['skill_offered'],
             'skill_wanted': reciprocal_task['skill_requested'],
-            'message': f"Skill exchange matched: {reciprocal_task['skill_offered']} ↔ {target_task['skill_offered']}",
+            'message': f"Skill exchange matched! Ready to exchange {reciprocal_task['skill_offered']} ↔ {target_task['skill_offered']}",
             'status': 'pending'
         }
         db.table('session_requests').insert(exchange_session_request).execute()
 
+        # Notify the original creator
         db.table('notifications').insert({
             'user_id': target_task['creator_id'],
-            'title': 'Skill Exchange Matched',
-           'message': "Your exchange task has been matched with an exact skill swap.",
+            'title': 'Skill Exchange Matched! 🎉',
+            'message': f"Your skill exchange has been matched! Someone wants to learn {target_task['skill_offered']} and can teach you {target_task['skill_requested']}",
             'notification_type': 'skill_exchange',
             'reference_id': target_task['id'],
             'reference_type': 'skill_exchange_task'
         }).execute()
 
-
-        updated_target = db.table('skill_exchange_tasks').select('*').eq('id', target_task['id']).limit(1).execute()
-        updated_reciprocal = db.table('skill_exchange_tasks').select('*').eq('id', reciprocal_task['id']).limit(1).execute()
-
+        # Notify the acceptor
+        db.table('notifications').insert({
+            'user_id': current_user_id,
+            'title': 'Exchange Accepted!',
+            'message': f"You've successfully matched for skill exchange: {reciprocal_task['skill_offered']} ↔ {target_task['skill_offered']}",
+            'notification_type': 'skill_exchange',
+            'reference_id': reciprocal_task['id'],
+            'reference_type': 'skill_exchange_task'
+        }).execute()
 
         return {
-            "message": "Skill exchange matched successfully",
+            "message": "Skill exchange matched successfully! Session request has been created.",
             "matched_task": target_task,
-            "reciprocal_task": reciprocal_task
+            "reciprocal_task": reciprocal_task,
+            "auto_created": not reciprocal_result.data
         }
 
     except HTTPException:
