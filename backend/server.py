@@ -33,6 +33,7 @@ api_router = APIRouter(prefix="/api")
 from app.api.routes import (
     auth, skills, sessions, tasks, reviews, payments, ai, admin, 
     notifications, users, reputation, mentors, roadmap, verification,
+      realtime,
     leaderboard, calendar
 )
 
@@ -51,6 +52,7 @@ api_router.include_router(reputation.router)
 api_router.include_router(mentors.router)
 api_router.include_router(roadmap.router)
 api_router.include_router(verification.router)
+api_router.include_router(realtime.router)
 api_router.include_router(leaderboard.router)
 api_router.include_router(calendar.router)
 

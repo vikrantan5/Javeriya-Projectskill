@@ -9,7 +9,7 @@ import logging
 import uuid
 from pydantic import BaseModel
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Union
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +211,12 @@ async def generate_skill_quiz(
         )
 
 @router.post("/submit-quiz/{test_id}")
-async def submit_skill_quiz(test_id: str, answers: list, current_user_id: str = Depends(get_current_user)):
+async def submit_skill_quiz(
+    test_id: str,
+     quiz_submission: Union[QuizSubmissionPayload, List[int]],
+    current_user_id: str = Depends(get_current_user)
+):
+    answers = quiz_submission.answers if isinstance(quiz_submission, QuizSubmissionPayload) else quiz_submission
     """Submit skill verification quiz"""
     try:
         db = get_db()

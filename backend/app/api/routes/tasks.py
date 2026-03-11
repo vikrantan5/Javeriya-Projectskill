@@ -449,7 +449,7 @@ async def accept_task(task_id: str, current_user_id: str = Depends(get_current_u
 
 @router.post("/{task_id}/submit")
 async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, current_user_id: str = Depends(get_current_user)):
-    submission_text = submission_data.submission_text or submission_data.message
+    submission_text = submission_data.submission_text
 
     """Submit work for a task"""
     try:

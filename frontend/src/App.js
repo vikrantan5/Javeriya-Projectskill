@@ -16,6 +16,7 @@ import SessionBooking from './pages/SessionBooking';
 import Leaderboard from './pages/Leaderboard';
 import Wallet from './pages/Wallet';
 import SkillExchangeMarketplace from './pages/SkillExchangeMarketplace';
+import RoadmapPlanner from './pages/RoadmapPlanner';
 
 // Auth context
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -123,6 +124,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Wallet />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/roadmap"
+            element={
+              <ProtectedRoute>
+                <RoadmapPlanner />
               </ProtectedRoute>
             }
           />

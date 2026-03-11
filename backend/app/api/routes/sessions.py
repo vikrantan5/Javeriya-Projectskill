@@ -34,18 +34,19 @@ async def generate_meeting_link(payload: MeetingLinkGenerateRequest, current_use
     """Generate meeting links with provider choice at booking time."""
     meeting_id = str(uuid.uuid4())[:10]
     topic = (payload.session_topic or "TalentConnect Session").replace(" ", "-")
+    provider = payload.provider or payload.platform or "google_meet"
 
-    if payload.provider == "google_meet":
+    if provider == "google_meet":
          link = "https://meet.google.com/new"
-    elif payload.provider == "zoom":
+    elif provider == "zoom":
         link = f"https://zoom.us/j/{meeting_id}?pwd=talentconnect"
-    elif payload.provider == "webrtc":
+    elif provider == "webrtc":
         link = f"https://webrtc.talentconnect.local/room/{meeting_id}-{topic}"
     else:
         raise HTTPException(status_code=400, detail="Unsupported meeting provider")
 
     return {
-        "provider": payload.provider,
+        "provider": provider,
         "meeting_link": link
     }
 

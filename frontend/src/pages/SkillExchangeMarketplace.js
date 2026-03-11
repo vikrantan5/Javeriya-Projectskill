@@ -10,6 +10,33 @@ const initialForm = {
 };
 
 const SkillExchangeMarketplace = () => {
+    const getErrorMessage = (error, fallbackMessage) => {
+    const detail = error?.response?.data?.detail;
+
+    if (Array.isArray(detail)) {
+      const joined = detail
+        .map((item) => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object' && item.msg) return item.msg;
+          return null;
+        })
+        .filter(Boolean)
+        .join(' | ');
+
+      return joined || fallbackMessage;
+    }
+
+    if (typeof detail === 'string') return detail;
+    if (detail && typeof detail === 'object') {
+      return detail.msg || fallbackMessage;
+    }
+
+    if (typeof error?.message === 'string' && error.message.trim()) {
+      return error.message;
+    }
+
+    return fallbackMessage;
+  };
   const [marketplaceTasks, setMarketplaceTasks] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
   const [activeTab, setActiveTab] = useState('marketplace');
@@ -18,7 +45,7 @@ const SkillExchangeMarketplace = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
+    const safeMessage = typeof message === 'string' ? message : String(message ?? 'Unexpected error');
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
@@ -32,7 +59,7 @@ const SkillExchangeMarketplace = () => {
       setMarketplaceTasks(Array.isArray(marketData) ? marketData : []);
       setMyTasks(Array.isArray(mineData) ? mineData : []);
     } catch (error) {
-      showToast(error?.response?.data?.detail || 'Failed to load exchange tasks', 'error');
+     showToast(getErrorMessage(error, 'Failed to load exchange tasks'), 'error');
     }
     setLoading(false);
   };
@@ -51,7 +78,7 @@ const SkillExchangeMarketplace = () => {
       await loadData();
       setActiveTab('my');
     } catch (error) {
-      showToast(error?.response?.data?.detail || 'Failed to create exchange task', 'error');
+      showToast(getErrorMessage(error, 'Failed to create exchange task'), 'error');
     }
     setLoading(false);
   };
@@ -63,7 +90,7 @@ const SkillExchangeMarketplace = () => {
       showToast('Exchange matched successfully');
       await loadData();
     } catch (error) {
-      showToast(error?.response?.data?.detail || 'Unable to accept exchange task', 'error');
+     showToast(getErrorMessage(error, 'Unable to accept exchange task'), 'error');
     }
     setLoading(false);
   };

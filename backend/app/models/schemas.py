@@ -125,8 +125,10 @@ class SessionUpdate(BaseModel):
 
 
 class MeetingLinkGenerateRequest(BaseModel):
-    session_id: UUID
-    platform: Optional[str] = "google_meet"
+    provider: Optional[str] = "google_meet"
+    platform: Optional[str] = None
+    session_topic: Optional[str] = "TalentConnect Session"
+    session_id: Optional[UUID] = None
 
 # =====================================================
 # REVIEW SCHEMAS
@@ -151,17 +153,17 @@ class ReviewResponse(BaseModel):
 # TASK SCHEMAS
 # =====================================================
 class SkillExchangeTaskCreate(BaseModel):
-    title: str = Field(..., min_length=10, max_length=500)
-    description: str
+    description: Optional[str] = None
     skill_offered: str
-    skill_wanted: str
+  
+    skill_requested: str
     difficulty_level: Optional[str] = None
     deadline: Optional[datetime] = None
     estimated_hours: Optional[int] = None
 
 
 class SkillExchangeTaskAccept(BaseModel):
-    task_id: UUID
+    reciprocal_task_id: Optional[UUID] = None
     message: Optional[str] = None
 
 class TaskCreate(BaseModel):
@@ -279,7 +281,7 @@ class SkillVerificationResponse(BaseModel):
 
 class SkillVerificationSubmit(BaseModel):
     test_id: UUID
-    answers: List[dict]
+    answers: List[int]
 
 # =====================================================
 # ADMIN SCHEMAS

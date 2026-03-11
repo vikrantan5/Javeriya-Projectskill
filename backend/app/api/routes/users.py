@@ -3,6 +3,7 @@ from app.models.schemas import UserResponse, UserUpdate
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.token_service import token_service
+from uuid import UUID
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,8 @@ async def get_current_user_profile(current_user_id: str = Depends(get_current_us
         )
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user_by_id(user_id: str):
+
+async def get_user_by_id(user_id: UUID):
     """Get user profile by ID"""
     try:
         db = get_db()
