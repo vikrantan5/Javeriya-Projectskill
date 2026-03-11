@@ -97,21 +97,48 @@ const SessionBooking = () => {
   const loadSessions = async () => {
     setLoading(true);
     try {
-      const data = await sessionService.getMySessions();
-       const normalizedSessions = Array.isArray(data)
-        ? data.map((item) => {
+      // Load both learning sessions and skill exchange sessions
+      const [learningSessionsData, exchangeSessionsData] = await Promise.all([
+        sessionService.getMySessions().catch(() => []),
+        sessionService.getSkillExchangeSessions().catch(() => [])
+      ]);
+      
+      // Normalize learning sessions
+      const normalizedLearningSessions = Array.isArray(learningSessionsData)
+        ? learningSessionsData.map((item) => {
             if (item?.session) {
               return {
                 ...item.session,
                 role: item.role,
                 mentor_name: item.mentor?.full_name || item.mentor?.username,
                 learner_name: item.learner?.full_name || item.learner?.username,
+                session_type: 'learning'
               };
             }
-            return item;
+            return { ...item, session_type: 'learning' };
           })
         : [];
-      setSessions(normalizedSessions);
+      
+      // Normalize skill exchange sessions
+      const normalizedExchangeSessions = Array.isArray(exchangeSessionsData)
+        ? exchangeSessionsData.map((item) => {
+            const session = item.session || item;
+            const otherParticipant = item.other_participant;
+            const task = item.task;
+            return {
+              ...session,
+              session_type: 'skill_exchange',
+              other_participant_name: otherParticipant?.full_name || otherParticipant?.username,
+              other_participant_photo: otherParticipant?.profile_photo,
+              skill_offered: task?.skill_offered,
+              skill_requested: task?.skill_requested
+            };
+          })
+        : [];
+      
+      // Combine both types of sessions
+      const allSessions = [...normalizedLearningSessions, ...normalizedExchangeSessions];
+      setSessions(allSessions);
     } catch (error) {
       console.error('Error loading sessions:', error);
       setSessions([]);

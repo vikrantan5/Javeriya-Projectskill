@@ -53,8 +53,15 @@ const Register = () => {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [passwordError, setPasswordError] = useState('');
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
     // Simple password validation
   useEffect(() => {

@@ -97,8 +97,8 @@ const Navbar = () => {
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
+                       {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-1 overflow-x-auto scrollbar-hide">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isItemActive = isActive(item.path);
@@ -106,7 +106,7 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`relative group px-4 py-2 rounded-xl transition-all duration-200 ${
+                    className={`relative group px-3 py-2 rounded-xl transition-all duration-200 whitespace-nowrap ${
                       isItemActive
                         ? `bg-${item.color}-50 dark:bg-${item.color}-900/20 text-${item.color}-600 dark:text-${item.color}-400`
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'

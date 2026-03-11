@@ -158,17 +158,21 @@ const TaskMarketplace = () => {
     loadTasks();
   };
 
-  const handleCreateTask = async (e) => {
+    const handleCreateTask = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
         // Prepare task data with proper formatting
       const taskDataToSubmit = {
-        ...newTask,
-        deadline: new Date(newTask.deadline).toISOString(),
+        title: newTask.title,
+        description: newTask.description,
+        subject: newTask.subject || null,
+        difficulty_level: newTask.difficulty_level || null,
         price: parseFloat(newTask.price),
-        estimated_hours: newTask.estimated_hours ? parseInt(newTask.estimated_hours) : null,
-        attachment_urls: newTask.attachments || []
+        deadline: new Date(newTask.deadline).toISOString(),
+        attachment_urls: newTask.attachments || [],
+        requirements: newTask.requirements || null,
+        estimated_hours: newTask.estimated_hours ? parseInt(newTask.estimated_hours) : null
       };
       
       await taskService.createTask(taskDataToSubmit);
@@ -187,6 +191,7 @@ const TaskMarketplace = () => {
       });
       loadTasks();
     } catch (error) {
+      console.error('Task creation error:', error.response?.data);
       showNotification('Failed to create task: ' + (error.response?.data?.detail || error.message), 'error');
     }
     setLoading(false);
