@@ -168,31 +168,39 @@ const handleSave = async () => {
       const userData = response.data;
       setProfileData({
         full_name: userData.full_name || '',
-        bio: userData.bio || 'Passionate learner and skill exchanger. Always excited to learn new technologies and help others grow.',
-        location: userData.location || 'New York, USA',
-        phone: userData.phone || '+1 234 567 8900',
-        website: userData.website || 'https://portfolio.example.com',
-        github: userData.github || 'github.com/username',
-        twitter: userData.twitter || 'twitter.com/username',
-        linkedin: userData.linkedin || 'linkedin.com/in/username',
-        skills: userData.skills || ['React', 'JavaScript', 'Python'],
-        interests: userData.interests || ['Machine Learning', 'Web Development'],
-        languages: userData.languages || ['English (Native)'],
-        education: userData.education || 'B.Tech in Computer Science',
-        company: userData.company || 'Tech Innovators Inc.',
-        jobTitle: userData.job_title || 'Senior Developer'
+        bio: userData.bio || '',
+        location: userData.location || '',
+        phone: userData.phone || '',
+        website: userData.website || '',
+        github: userData.github || '',
+        twitter: userData.twitter || '',
+        linkedin: userData.linkedin || '',
+        skills: userData.skills || [],
+        interests: userData.interests || [],
+        languages: userData.languages || [],
+        education: userData.education || '',
+        company: userData.company || '',
+        jobTitle: userData.job_title || ''
       });
       
-      setUserStats({
-        total_sessions: userData.total_sessions || 0,
-        total_tasks_completed: userData.total_tasks_completed || 0,
-        average_rating: userData.average_rating || 0,
-        total_mentees: userData.connections_count || 0
-      });
+       // Load user stats from dedicated endpoint
+      loadUserStats();
     } catch (error) {
       console.error('Error loading profile data:', error);
     }
     setLoadingProfile(false);
+  };
+
+  const loadUserStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/me/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserStats(response.data);
+    } catch (error) {
+      console.error('Error loading user stats:', error);
+    }
   };
 
   const loadUpcomingSessions = async () => {
@@ -628,7 +636,7 @@ const handleSave = async () => {
                   </div>
                 </div>
                 
-                <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+               <div className="bg-white/10 backdrop-blur rounded-xl p-3 mb-4">
                   <p className="text-xs text-indigo-100 mb-2">Recent Transactions</p>
                   {tokenTransactions.length > 0 ? (
                     <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -645,6 +653,13 @@ const handleSave = async () => {
                     <p className="text-xs text-white/70">No transactions yet</p>
                   )}
                 </div>
+                <a
+                  href="/wallet"
+                  className="block w-full px-4 py-2 bg-white text-indigo-600 rounded-xl font-semibold text-center hover:bg-indigo-50 transition-colors"
+                  data-testid="view-all-transactions-link"
+                >
+                  View All Transactions
+                </a>
               </>
             ) : (
               <p className="text-center text-white/70 py-8">No token data available</p>

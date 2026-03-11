@@ -109,6 +109,11 @@ export const taskService = {
     return response.data;
   },
 
+    getCompletedTasks: async () => {
+    const response = await api.get('/api/tasks/?status=completed');
+    return response.data;
+  },
+
   getTaskById: async (taskId) => {
     const response = await api.get(`/api/tasks/${taskId}`);
     return response.data;

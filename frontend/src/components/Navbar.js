@@ -58,13 +58,12 @@ const Navbar = () => {
     { path: '/tasks', label: 'Tasks', icon: Briefcase, color: 'green' },
     { path: '/sessions', label: 'Sessions', icon: Calendar, color: 'purple' },
       { path: '/leaderboard', label: 'Leaderboard', icon: Award, color: 'yellow' },
+       { path: '/wallet', label: 'Wallet', icon: TrendingUp, color: 'emerald' },
     { path: '/chatbot', label: 'AI Assistant', icon: Bot, color: 'pink', badge: 'New' },
   ];
 
   const quickActions = [
-    { icon: TrendingUp, label: 'Analytics', path: '/analytics' },
-    { icon: Award, label: 'Achievements', path: '/achievements' },
-    { icon: MessageSquare, label: 'Messages', path: '/messages', badge: 2 },
+   
   ];
 
   return (

@@ -43,6 +43,12 @@ class UserUpdate(BaseModel):
     profile_photo: Optional[str] = None
     location: Optional[str] = None
     phone: Optional[str] = None
+    website: Optional[str] = None
+    github: Optional[str] = None
+    twitter: Optional[str] = None
+    linkedin: Optional[str] = None
+    company: Optional[str] = None
+    job_title: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

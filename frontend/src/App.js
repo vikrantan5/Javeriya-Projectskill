@@ -14,6 +14,7 @@ import Chatbot from './pages/Chatbot';
 import AdminDashboard from './pages/AdminDashboard';
 import SessionBooking from './pages/SessionBooking';
 import Leaderboard from './pages/Leaderboard';
+import Wallet from './pages/Wallet';
 
 // Auth context
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -105,6 +106,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Leaderboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute>
+                <Wallet />
               </ProtectedRoute>
             }
           />

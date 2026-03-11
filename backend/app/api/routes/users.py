@@ -31,6 +31,52 @@ async def get_token_balance(current_user_id: str = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+@router.get("/me/stats")
+async def get_user_stats(current_user_id: str = Depends(get_current_user)):
+    """Get user statistics (sessions, tasks, ratings, mentees)"""
+    try:
+        db = get_db()
+        
+        # Get user data
+        user_result = db.table('users').select('*').eq('id', current_user_id).execute()
+        
+        if not user_result.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user = user_result.data[0]
+        
+        # Get total sessions (as mentor and learner)
+        mentor_sessions = db.table('learning_sessions').select('id').eq('mentor_id', current_user_id).eq('status', 'completed').execute()
+        learner_sessions = db.table('learning_sessions').select('id').eq('learner_id', current_user_id).eq('status', 'completed').execute()
+        total_sessions = len(mentor_sessions.data or []) + len(learner_sessions.data or [])
+        
+        # Get total tasks completed
+        tasks_completed = db.table('task_board').select('id').eq('acceptor_id', current_user_id).eq('status', 'completed').execute()
+        total_tasks_completed = len(tasks_completed.data or [])
+        
+        # Get average rating (from user table)
+        average_rating = user.get('average_rating', 0.0)
+        
+        # Get mentees count (connections where user is mentor)
+        connections = db.table('connections').select('id').eq('user_id', current_user_id).eq('status', 'accepted').execute()
+        total_mentees = len(connections.data or [])
+        
+        return {
+            "total_sessions": total_sessions,
+            "total_tasks_completed": total_tasks_completed,
+            "average_rating": average_rating,
+            "total_mentees": total_mentees
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user stats: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.get("/token-transactions")
 async def get_token_transactions(limit: int = 20, current_user_id: str = Depends(get_current_user)):
@@ -284,6 +330,18 @@ async def update_user_profile(update_data: UserUpdate, current_user_id: str = De
             update_dict['location'] = update_data.location
         if update_data.phone is not None:
             update_dict['phone'] = update_data.phone
+        if update_data.website is not None:
+            update_dict['website'] = update_data.website
+        if update_data.github is not None:
+            update_dict['github'] = update_data.github
+        if update_data.twitter is not None:
+            update_dict['twitter'] = update_data.twitter
+        if update_data.linkedin is not None:
+            update_dict['linkedin'] = update_data.linkedin
+        if update_data.company is not None:
+            update_dict['company'] = update_data.company
+        if update_data.job_title is not None:
+            update_dict['job_title'] = update_data.job_title
         
         if not update_dict:
             raise HTTPException(
