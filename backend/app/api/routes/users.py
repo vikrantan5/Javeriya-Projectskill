@@ -2,11 +2,49 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import UserResponse, UserUpdate
 from app.utils.auth import get_current_user
 from app.database import get_db
+from app.services.token_service import token_service
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+@router.get("/token-balance")
+async def get_token_balance(current_user_id: str = Depends(get_current_user)):
+    """Get user's token balance and stats"""
+    try:
+        db = get_db()
+        
+        # Get token account
+        token_result = db.table('skill_tokens').select('*').eq('user_id', current_user_id).execute()
+        
+        if not token_result.data:
+            # Create account if doesn't exist
+            token_account = token_service.create_token_account(current_user_id)
+            return token_account
+        
+        return token_result.data[0]
+    
+    except Exception as e:
+        logger.error(f"Error getting token balance: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/token-transactions")
+async def get_token_transactions(limit: int = 20, current_user_id: str = Depends(get_current_user)):
+    """Get user's token transaction history"""
+    try:
+        transactions = token_service.get_transaction_history(current_user_id, limit)
+        return {"transactions": transactions}
+    
+    except Exception as e:
+        logger.error(f"Error getting transactions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(current_user_id: str = Depends(get_current_user)):

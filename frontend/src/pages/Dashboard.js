@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { skillService, taskService, sessionService } from '../services/apiService';
+import axios from 'axios';
 import { 
   BookOpen, 
   CheckCircle, 
@@ -43,8 +44,12 @@ import {
   Compass,
   Heart,
   Share2,
-  MoreHorizontal
+  MoreHorizontal,
+  Coins,
+  Loader2
 } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Dashboard = () => {
   const { user, darkMode, toggleDarkMode } = useAuth();
@@ -60,7 +65,8 @@ const Dashboard = () => {
   const [recommendedSkills, setRecommendedSkills] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [activeChart, setActiveChart] = useState('progress');
-
+ const [tokenBalance, setTokenBalance] = useState(null);
+  const [loadingTokens, setLoadingTokens] = useState(false);
   useEffect(() => {
     // Set greeting based on time of day
     const hour = new Date().getHours();
@@ -71,7 +77,7 @@ const Dashboard = () => {
     loadDashboardData();
     loadRecommendedSkills();
     loadRecentActivities();
-
+  loadTokenBalance();
     // Hide welcome message after 5 seconds
     const timer = setTimeout(() => setShowWelcome(false), 5000);
     return () => clearTimeout(timer);
@@ -112,6 +118,22 @@ const Dashboard = () => {
       { type: 'rating', title: 'Received 5-star rating', time: '1 day ago', icon: Star, color: 'yellow' },
       { type: 'skill', title: 'Added Python to skills', time: '2 days ago', icon: Code, color: 'purple' },
     ]);
+  };
+
+  const loadTokenBalance = async () => {
+    setLoadingTokens(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.get(`${BACKEND_URL}/api/users/token-balance`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTokenBalance(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading token balance:', error);
+    }
+    setLoadingTokens(false);
   };
 
   const getGreetingEmoji = () => {
@@ -268,13 +290,21 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid with 3D Effects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 perspective-1000">
+                    {/* Stats Grid with 3D Effects */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 perspective-1000">
             {[
               { icon: BookOpen, label: 'Total Sessions', value: stats.totalSessions, color: 'blue', trend: '+12%', iconBg: 'from-blue-500 to-cyan-400' },
               { icon: CheckCircle, label: 'Tasks Completed', value: stats.totalTasks, color: 'green', trend: '+5%', iconBg: 'from-green-500 to-emerald-400' },
               { icon: Star, label: 'Average Rating', value: stats.averageRating.toFixed(1), suffix: ' ⭐', color: 'yellow', trend: '+0.2', iconBg: 'from-yellow-500 to-orange-400' },
               { icon: Target, label: 'Skills Listed', value: stats.totalSkills, color: 'purple', trend: '+3', iconBg: 'from-purple-500 to-pink-400' },
+              { 
+                icon: Coins, 
+                label: 'Skill Tokens', 
+                value: loadingTokens ? '...' : (tokenBalance?.balance || 0), 
+                color: 'indigo', 
+                trend: '+' + (tokenBalance?.total_earned || 0), 
+                iconBg: 'from-indigo-500 to-purple-400' 
+              },
             ].map((stat, index) => {
               const Icon = stat.icon;
               return (
@@ -724,7 +754,7 @@ const Dashboard = () => {
           transform: translateZ(0);
         }
         
-        .transform-z-\[-10px\] {
+        .transform-z-[-10px] {
           transform: translateZ(-10px);
         }
         

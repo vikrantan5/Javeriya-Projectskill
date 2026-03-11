@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 import {
   User,
   Mail,
@@ -46,8 +47,13 @@ import {
   Brain,
   Rocket,
   Zap,
-  Crown
+  Crown,
+  Coins,
+  FileText,
+  Loader2
 } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -74,9 +80,19 @@ const Profile = () => {
   });
 
   const fileInputRef = useRef(null);
+  const resumeInputRef = useRef(null);
   const [avatar, setAvatar] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  
+  // Trust Score & Token Balance
+  const [trustScore, setTrustScore] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
+  const [tokenTransactions, setTokenTransactions] = useState([]);
+  const [loadingTrust, setLoadingTrust] = useState(false);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeResult, setResumeResult] = useState(null);
 
   const handleSave = () => {
     alert('Profile updated successfully!');
@@ -97,6 +113,89 @@ const Profile = () => {
     }
   };
 
+
+
+  // Load Trust Score
+  useEffect(() => {
+    if (user?.id) {
+      loadTrustScore();
+      loadTokenBalance();
+      loadTokenTransactions();
+    }
+  }, [user]);
+
+  const loadTrustScore = async () => {
+    setLoadingTrust(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/reputation/trust-score/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTrustScore(response.data);
+    } catch (error) {
+      console.error('Error loading trust score:', error);
+    }
+    setLoadingTrust(false);
+  };
+
+  const loadTokenBalance = async () => {
+    setLoadingTokens(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/token-balance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTokenBalance(response.data);
+    } catch (error) {
+      console.error('Error loading token balance:', error);
+    }
+    setLoadingTokens(false);
+  };
+
+  const loadTokenTransactions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/token-transactions?limit=10`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTokenTransactions(response.data.transactions || []);
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+    }
+  };
+
+  const handleResumeUpload = async (file) => {
+    setUploadingResume(true);
+    setResumeResult(null);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('auto_add', 'true');
+      
+      const response = await axios.post(`${BACKEND_URL}/api/skills/upload-resume`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setResumeResult(response.data);
+      alert(`Resume uploaded! ${response.data.auto_add_result?.added_count || 0} skills added to your profile.`);
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      alert('Failed to upload resume: ' + (error.response?.data?.detail || error.message));
+    }
+    setUploadingResume(false);
+  };
+
+  const getTrustBadge = (score) => {
+    if (!score) return { label: 'New User', color: 'gray', icon: '⭐', bgGradient: 'from-gray-400 to-gray-500' };
+    if (score >= 90) return { label: 'Gold Mentor', color: 'yellow', icon: '🏆', bgGradient: 'from-yellow-400 to-yellow-600' };
+    if (score >= 75) return { label: 'Silver Mentor', color: 'gray', icon: '🥈', bgGradient: 'from-gray-300 to-gray-500' };
+    if (score >= 60) return { label: 'Bronze Mentor', color: 'orange', icon: '🥉', bgGradient: 'from-orange-400 to-orange-600' };
+    return { label: 'Aspiring Mentor', color: 'indigo', icon: '⭐', bgGradient: 'from-indigo-400 to-indigo-600' };
+  };
   const stats = [
     { icon: BookOpen, label: 'Sessions', value: user?.total_sessions || 128, color: 'blue', trend: '+12%' },
     { icon: Briefcase, label: 'Tasks', value: user?.total_tasks_completed || 45, color: 'green', trend: '+8%' },
@@ -325,6 +424,127 @@ const Profile = () => {
           })}
         </div>
 
+              {/* Trust Score & Token Balance Cards */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Trust Score Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6" data-testid="trust-score-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-indigo-600" />
+                Trust Score
+              </h3>
+              <button onClick={loadTrustScore} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <Zap className={`w-4 h-4 text-indigo-600 ${loadingTrust ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            
+            {loadingTrust ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              </div>
+            ) : trustScore ? (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <div className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                      {trustScore.trust_score || 0}
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">out of 100</p>
+                  </div>
+                  <div className={`px-4 py-2 bg-gradient-to-r ${getTrustBadge(trustScore.trust_score).bgGradient} rounded-xl text-white text-center`}>
+                    <div className="text-2xl mb-1">{getTrustBadge(trustScore.trust_score).icon}</div>
+                    <div className="text-xs font-semibold">{getTrustBadge(trustScore.trust_score).label}</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Verified Skills</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{trustScore.stats?.verified_skills_count || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Response Rate</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{trustScore.stats?.response_rate || 0}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Total Sessions</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{trustScore.stats?.total_sessions || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Average Rating</span>
+                    <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                      {trustScore.stats?.average_rating?.toFixed(1) || '0.0'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-gray-500 py-8">No trust score data available</p>
+            )}
+          </div>
+
+          {/* Token Balance Card */}
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-6 text-white" data-testid="token-balance-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Coins className="w-5 h-5" />
+                Skill Tokens
+              </h3>
+              <button onClick={loadTokenBalance} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                <Zap className={`w-4 h-4 ${loadingTokens ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            
+            {loadingTokens ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : tokenBalance ? (
+              <>
+                <div className="mb-6">
+                  <div className="text-5xl font-bold mb-2 flex items-center gap-2">
+                    <Coins className="w-10 h-10" />
+                    {tokenBalance.balance || 0}
+                  </div>
+                  <p className="text-indigo-100 text-sm">Available Balance</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                    <p className="text-xs text-indigo-100 mb-1">Total Earned</p>
+                    <p className="text-xl font-bold">{tokenBalance.total_earned || 0}</p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                    <p className="text-xs text-indigo-100 mb-1">Total Spent</p>
+                    <p className="text-xl font-bold">{tokenBalance.total_spent || 0}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+                  <p className="text-xs text-indigo-100 mb-2">Recent Transactions</p>
+                  {tokenTransactions.length > 0 ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {tokenTransactions.slice(0, 3).map((tx, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                          <span className="text-white/90">{tx.reason?.replace(/_/g, ' ')}</span>
+                          <span className={`font-semibold ${tx.transaction_type === 'earn' ? 'text-green-300' : 'text-red-300'}`}>
+                            {tx.transaction_type === 'earn' ? '+' : '-'}{tx.amount}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/70">No transactions yet</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-white/70 py-8">No token data available</p>
+            )}
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {tabs.map((tab) => {
@@ -459,6 +679,61 @@ const Profile = () => {
 
             {activeTab === 'skills' && (
               <div className="space-y-6">
+                   {/* Resume Upload Card */}
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6 text-white" data-testid="resume-upload-card">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                        <FileText className="w-6 h-6" />
+                        Upload Resume → Auto Import Skills
+                      </h3>
+                      <p className="text-purple-100 text-sm">Upload your resume (PDF/DOCX) and we'll automatically extract and add your skills</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <input
+                      type="file"
+                      ref={resumeInputRef}
+                      className="hidden"
+                      accept=".pdf,.docx,.doc"
+                      onChange={(e) => e.target.files?.[0] && handleResumeUpload(e.target.files[0])}
+                    />
+                    <button
+                      onClick={() => resumeInputRef.current?.click()}
+                      disabled={uploadingResume}
+                      className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-all disabled:opacity-50"
+                      data-testid="upload-resume-button"
+                    >
+                      {uploadingResume ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5" />
+                          Upload Resume
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {resumeResult && (
+                    <div className="mt-4 bg-white/10 backdrop-blur rounded-xl p-4">
+                      <p className="font-semibold mb-2">✅ Resume processed successfully!</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-purple-100">Skills Found: {resumeResult.parse_result?.total_skills_found || 0}</p>
+                          <p className="text-purple-100">Skills Added: {resumeResult.auto_add_result?.added_count || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-purple-100">Already Had: {resumeResult.auto_add_result?.skipped_count || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {/* Skills */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Skills & Expertise</h3>

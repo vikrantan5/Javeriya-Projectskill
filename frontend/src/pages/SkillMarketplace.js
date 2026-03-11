@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import FindMentorModal from '../components/FindMentorModal';
 import { skillService } from '../services/apiService';
 import {
   Search,
@@ -43,7 +44,8 @@ import {
   Target,
   Brain,
   Rocket,
-  Compass
+  Compass,
+  Edit2
 } from 'lucide-react';
 
 const SkillMarketplace = () => {
@@ -79,6 +81,7 @@ const SkillMarketplace = () => {
   const [editSkill, setEditSkill] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  const [findMentorModal, setFindMentorModal] = useState({ show: false, skill: '' });
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
@@ -692,6 +695,14 @@ const SkillMarketplace = () => {
 
                         {/* Action Buttons */}
                         <div className="flex gap-2">
+                           <button
+                            onClick={() => setFindMentorModal({ show: true, skill: skill.skill_name })}
+                            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium text-sm flex items-center justify-center gap-2"
+                            data-testid="find-mentor-button"
+                          >
+                            <Search className="w-4 h-4" />
+                            Find Mentor
+                          </button>
                           <button
                             onClick={() => {
                               setSelectedMentor(mentor);
@@ -1143,6 +1154,12 @@ const SkillMarketplace = () => {
           </div>
         )}
       </div>
+ {/* Find Mentor Modal */}
+      <FindMentorModal 
+        isOpen={findMentorModal.show}
+        onClose={() => setFindMentorModal({ show: false, skill: '' })}
+        skillName={findMentorModal.skill}
+      />
 
       <style jsx>{`
         @keyframes blob {
