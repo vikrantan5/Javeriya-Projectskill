@@ -15,6 +15,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import SessionBooking from './pages/SessionBooking';
 import Leaderboard from './pages/Leaderboard';
 import Wallet from './pages/Wallet';
+import SkillExchangeMarketplace from './pages/SkillExchangeMarketplace';
 
 // Auth context
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -62,6 +63,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TaskMarketplace />
+              </ProtectedRoute>
+            }
+          />
+            <Route
+            path="/exchange"
+            element={
+              <ProtectedRoute>
+                <SkillExchangeMarketplace />
               </ProtectedRoute>
             }
           />

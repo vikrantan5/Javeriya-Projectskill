@@ -88,6 +88,18 @@ export const sessionService = {
     const response = await api.patch(`/api/sessions/${sessionId}`, updateData);
     return response.data;
   },
+  getMeetingProviders: async () => {
+    const response = await api.get('/api/sessions/meeting-providers');
+    return response.data;
+  },
+
+  generateMeetingLink: async (provider, sessionTopic) => {
+    const response = await api.post('/api/sessions/generate-meeting-link', {
+      provider,
+      session_topic: sessionTopic,
+    });
+    return response.data;
+  },
 };
 
 // ============================================
@@ -130,7 +142,10 @@ export const taskService = {
   },
 
   submitTask: async (taskId, submissionData) => {
-    const response = await api.post(`/api/tasks/${taskId}/submit`, submissionData);
+    const response = await api.post(`/api/tasks/${taskId}/submit`, {
+      submission_text: submissionData?.submission_text || submissionData?.message || '',
+      submission_files: submissionData?.submission_files || submissionData?.attachments || [],
+    });
     return response.data;
   },
 
@@ -141,6 +156,27 @@ export const taskService = {
 
   deleteTask: async (taskId) => {
     const response = await api.delete(`/api/tasks/${taskId}`);
+    return response.data;
+  },
+  createSkillExchangeTask: async (taskData) => {
+    const response = await api.post('/api/tasks/exchange', taskData);
+    return response.data;
+  },
+
+  getSkillExchangeTasks: async (statusFilter = 'open') => {
+    const response = await api.get(`/api/tasks/exchange?status_filter=${statusFilter}`);
+    return response.data;
+  },
+
+  getMySkillExchangeTasks: async () => {
+    const response = await api.get('/api/tasks/exchange/my');
+    return response.data;
+  },
+
+  acceptSkillExchangeTask: async (taskId, reciprocalTaskId = null) => {
+    const response = await api.post(`/api/tasks/exchange/${taskId}/accept`, {
+      reciprocal_task_id: reciprocalTaskId,
+    });
     return response.data;
   },
 };
@@ -169,6 +205,10 @@ export const reviewService = {
 // PAYMENT SERVICE
 // ============================================
 export const paymentService = {
+    getRazorpayKey: async () => {
+    const response = await api.get('/api/payments/key');
+    return response.data;
+  },
   createOrder: async (taskId, amount, currency = 'INR') => {
     const response = await api.post('/api/payments/create-order', {
       task_id: taskId,
@@ -184,6 +224,11 @@ export const paymentService = {
       razorpay_payment_id: razorpayPaymentId,
       razorpay_signature: razorpaySignature
     });
+    return response.data;
+  },
+
+   getTaskPaymentStatus: async (taskId) => {
+    const response = await api.get(`/api/payments/task/${taskId}/status`);
     return response.data;
   },
 

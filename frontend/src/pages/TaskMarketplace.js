@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { taskService } from '../services/apiService';
+import { taskService, paymentService } from '../services/apiService';
+import { useAuth } from '../context/AuthContext';
 import {
   Briefcase,
   Plus,
@@ -47,10 +49,13 @@ import {
   Rocket,
   Compass,
   Grid,
-  List
+  List,
+  Wallet
 } from 'lucide-react';
 
 const TaskMarketplace = () => {
+   const { user } = useAuth();
+  
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [showCreateTask, setShowCreateTask] = useState(false);
@@ -174,29 +179,109 @@ const TaskMarketplace = () => {
       showNotification('Failed to accept task: ' + (error.response?.data?.detail || error.message), 'error');
     }
   };
+ const [paymentModal, setPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+ const handleSubmitTask = async () => {
+  setLoading(true);
+  try {
+    const result = await taskService.submitTask(selectedTask.id, submissionData);
 
-  const handleSubmitTask = async () => {
-    setLoading(true);
-    try {
-      await taskService.submitTask(selectedTask.id, submissionData);
+    const plagiarismScore = result?.plagiarism_report?.similarity_score || 0;
+
+    if (result?.plagiarism_report?.flagged) {
+      showNotification(
+        `Task submitted but flagged for review (${plagiarismScore}% similarity)`,
+        'error'
+      );
+    } else {
       showNotification('Task submitted successfully!', 'success');
-      setSubmissionModal(false);
-      setSubmissionData({ message: '', attachments: [] });
-      loadTasks();
-    } catch (error) {
-      showNotification('Failed to submit task: ' + (error.response?.data?.detail || error.message), 'error');
     }
-    setLoading(false);
-  };
+
+    setSubmissionModal(false);
+    setSubmissionData({ message: '', attachments: [] });
+    loadTasks();
+
+  } catch (error) {
+    showNotification(
+      'Failed to submit task: ' + (error.response?.data?.detail || error.message),
+      'error'
+    );
+  }
+
+  setLoading(false);
+};
 
   const handleCompleteTask = async (taskId) => {
     try {
-      await taskService.completeTask(taskId);
-      showNotification('Task marked as completed!', 'success');
+      await taskService.approveSubmission(taskId, 'Approved by task creator');
+      showNotification('Submission approved and payment released!', 'success');
       loadTasks();
     } catch (error) {
-      showNotification('Failed to complete task: ' + (error.response?.data?.detail || error.message), 'error');
+       showNotification('Failed to approve task: ' + (error.response?.data?.detail || error.message), 'error');
     }
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayEscrow = async () => {
+    if (!selectedTask) return;
+    setPaymentLoading(true);
+    try {
+      const scriptReady = await loadRazorpayScript();
+      if (!scriptReady) {
+        showNotification('Failed to load Razorpay checkout', 'error');
+        return;
+      }
+
+      const keyResponse = await paymentService.getRazorpayKey();
+      const order = await paymentService.createOrder(selectedTask.id, selectedTask.price, selectedTask.currency || 'INR');
+
+      const options = {
+        key: keyResponse.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'TalentConnect',
+        description: `Escrow for ${selectedTask.title}`,
+        order_id: order.order_id,
+        handler: async (response) => {
+          try {
+            await paymentService.verifyPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+            showNotification('Escrow payment completed successfully', 'success');
+            setPaymentModal(false);
+            loadTasks();
+          } catch (error) {
+            showNotification('Payment verification failed', 'error');
+    }
+     },
+        prefill: {
+          name: user?.full_name || user?.username || 'TalentConnect User',
+          email: user?.email || '',
+        },
+        theme: { color: '#4f46e5' },
+      };
+
+      const razorpayCheckout = new window.Razorpay(options);
+      razorpayCheckout.open();
+    } catch (error) {
+      showNotification(error?.response?.data?.detail || 'Unable to start payment flow', 'error');
+    }
+    setPaymentLoading(false);
   };
 
   const handleDeleteTask = async (taskId) => {
@@ -261,7 +346,7 @@ const TaskMarketplace = () => {
 
     // Price filter
     if (filterPrice !== 'all') {
-      const price = parseInt(task.price);
+      
       switch(filterPrice) {
         case 'low':
           filtered = filtered.filter(task => task.price < 500);
@@ -340,6 +425,14 @@ const TaskMarketplace = () => {
           </div>
           
           <div className="flex items-center gap-3">
+               <Link
+              to="/exchange"
+              className="flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              data-testid="open-exchange-marketplace-link"
+            >
+              <Wallet className="w-5 h-5" />
+              Skill Exchange
+            </Link>
             <button
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all"
@@ -613,7 +706,7 @@ const TaskMarketplace = () => {
                       </div>
 
                       {/* Action Button */}
-                      {task.status === 'open' && (
+                       {task.status === 'open' && task.creator_id !== user?.id && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -921,7 +1014,7 @@ const TaskMarketplace = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
-                  {selectedTask.status === 'open' && (
+                 {selectedTask.status === 'open' && selectedTask.creator_id !== user?.id && (
                     <button
                       onClick={() => {
                         handleAcceptTask(selectedTask.id);
@@ -934,7 +1027,7 @@ const TaskMarketplace = () => {
                     </button>
                   )}
 
-                  {selectedTask.status === 'accepted' && (
+   {selectedTask.status === 'accepted' && selectedTask.acceptor_id === user?.id && (
                     <button
                       onClick={() => {
                         setSubmissionModal(true);
@@ -947,7 +1040,20 @@ const TaskMarketplace = () => {
                     </button>
                   )}
 
-                  {selectedTask.status === 'submitted' && (
+                   {selectedTask.status === 'accepted' && selectedTask.creator_id === user?.id && (
+                    <button
+                      onClick={() => {
+                        setPaymentModal(true);
+                      }}
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                      data-testid="open-escrow-payment-modal-button"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      Pay Escrow
+                    </button>
+                  )}
+
+                  {selectedTask.status === 'submitted' && selectedTask.creator_id === user?.id && (
                     <button
                       onClick={() => handleCompleteTask(selectedTask.id)}
                       className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2"
@@ -1038,6 +1144,65 @@ const TaskMarketplace = () => {
                       <>
                         <Send className="w-4 h-4" />
                         Submit
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+         {paymentModal && selectedTask && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPaymentModal(false)} data-testid="escrow-payment-modal">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-t-2xl p-6">
+                <div className="absolute inset-0 bg-black/20 rounded-t-2xl"></div>
+                <div className="relative flex justify-between items-start">
+                  <h2 className="text-2xl font-bold text-white">Fund Escrow</h2>
+                  <button
+                    onClick={() => setPaymentModal(false)}
+                    className="p-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition-colors"
+                    data-testid="close-escrow-payment-modal"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Task</p>
+                  <p className="font-semibold text-gray-900 dark:text-white" data-testid="escrow-task-title">{selectedTask.title}</p>
+                  <p className="text-2xl font-bold text-indigo-600 mt-2" data-testid="escrow-payment-amount">₹{selectedTask.price}</p>
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-300" data-testid="escrow-payment-note">
+                  Payment will be held in escrow and released when you approve the submitted work.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPaymentModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    data-testid="escrow-payment-cancel-button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePayEscrow}
+                    disabled={paymentLoading}
+                    className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    data-testid="escrow-payment-confirm-button"
+                  >
+                    {paymentLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="w-4 h-4" />
+                        Pay with Razorpay
                       </>
                     )}
                   </button>

@@ -1,14 +1,50 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.models.schemas import PaymentCreate, PaymentResponse
+from app.models.schemas import PaymentCreate, PaymentResponse, PaymentVerifyRequest
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.payment_service import payment_service
+from app.config import settings
 from typing import List
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@router.get("/key")
+async def get_razorpay_key(current_user_id: str = Depends(get_current_user)):
+    """Return Razorpay publishable key for checkout."""
+    return {"key_id": settings.RAZORPAY_KEY_ID}
+
+
+@router.get("/task/{task_id}/status")
+async def get_task_payment_status(task_id: str, current_user_id: str = Depends(get_current_user)):
+    """Get latest payment status for a specific task."""
+    try:
+        db = get_db()
+        task_result = db.table('tasks').select('id, creator_id, acceptor_id').eq('id', task_id).limit(1).execute()
+        if not task_result.data:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        task = task_result.data[0]
+        if current_user_id not in [task.get('creator_id'), task.get('acceptor_id')]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        payment_result = db.table('payments').select('*').eq('task_id', task_id).order('created_at', desc=True).limit(1).execute()
+        return {
+            "has_payment": bool(payment_result.data),
+            "payment": payment_result.data[0] if payment_result.data else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching payment status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/create-order", response_model=dict)
 async def create_payment_order(payment_data: PaymentCreate, current_user_id: str = Depends(get_current_user)):
@@ -33,7 +69,13 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only task creator can create payment"
             )
-        
+
+
+        if not task.get('acceptor_id'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task must be accepted before creating payment"
+            )  
         # Create Razorpay order
         order = payment_service.create_order(
             amount=payment_data.amount,
@@ -71,21 +113,17 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
         )
 
 @router.post("/verify")
-async def verify_payment(
-    razorpay_order_id: str,
-    razorpay_payment_id: str,
-    razorpay_signature: str,
-    current_user_id: str = Depends(get_current_user)
-):
+async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = Depends(get_current_user)):
+
     """Verify Razorpay payment"""
     try:
         db = get_db()
         
         # Verify payment signature
         is_valid = payment_service.verify_payment(
-            razorpay_order_id,
-            razorpay_payment_id,
-            razorpay_signature
+            payload.razorpay_order_id,
+            payload.razorpay_payment_id,
+            payload.razorpay_signature
         )
         
         if not is_valid:
@@ -96,13 +134,15 @@ async def verify_payment(
         
         # Update payment record
         payment_update = {
-            'razorpay_payment_id': razorpay_payment_id,
-            'razorpay_signature': razorpay_signature,
+            'razorpay_payment_id': payload.razorpay_payment_id,
+            'razorpay_signature': payload.razorpay_signature,
             'status': 'completed',
-            'escrowed_at': 'now()'
+            'escrowed_at': utc_now_iso()
         }
         
-        result = db.table('payments').update(payment_update).eq('razorpay_order_id', razorpay_order_id).execute()
+        result = db.table('payments').update(payment_update).eq('razorpay_order_id', payload.razorpay_order_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Payment record not found")
         
         return {
             "message": "Payment verified successfully",
@@ -152,7 +192,7 @@ async def release_payment(payment_id: str, current_user_id: str = Depends(get_cu
         # Update payment
         db.table('payments').update({
             'status': 'released',
-            'released_at': 'now()'
+             'released_at': utc_now_iso()
         }).eq('id', payment_id).execute()
         
         # Create notification for payee

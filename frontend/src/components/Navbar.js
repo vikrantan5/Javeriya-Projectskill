@@ -24,7 +24,8 @@ import {
   Zap,
   MessageSquare,
   Award,
-  TrendingUp
+   TrendingUp,
+  ArrowLeftRight
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -56,6 +57,7 @@ const Navbar = () => {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'indigo' },
     { path: '/skills', label: 'Skills', icon: Code2, color: 'blue' },
     { path: '/tasks', label: 'Tasks', icon: Briefcase, color: 'green' },
+     { path: '/exchange', label: 'Exchange', icon: ArrowLeftRight, color: 'teal' },
     { path: '/sessions', label: 'Sessions', icon: Calendar, color: 'purple' },
       { path: '/leaderboard', label: 'Leaderboard', icon: Award, color: 'yellow' },
        { path: '/wallet', label: 'Wallet', icon: TrendingUp, color: 'emerald' },

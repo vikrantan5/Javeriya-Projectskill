@@ -1,5 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.models.schemas import SessionRequestCreate, SessionRequestResponse, SessionCreate, SessionResponse, SessionUpdate
+from app.models.schemas import (
+    SessionRequestCreate,
+    SessionRequestResponse,
+    SessionCreate,
+    SessionResponse,
+    SessionUpdate,
+    MeetingLinkGenerateRequest,
+)
 from app.utils.auth import get_current_user
 from app.database import get_db
 from typing import List
@@ -9,6 +16,38 @@ import uuid
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
+
+
+@router.get("/meeting-providers")
+async def get_meeting_providers(current_user_id: str = Depends(get_current_user)):
+    return {
+        "providers": [
+            {"id": "google_meet", "label": "Google Meet"},
+            {"id": "zoom", "label": "Zoom"},
+            {"id": "webrtc", "label": "WebRTC Room"}
+        ]
+    }
+
+
+@router.post("/generate-meeting-link")
+async def generate_meeting_link(payload: MeetingLinkGenerateRequest, current_user_id: str = Depends(get_current_user)):
+    """Generate meeting links with provider choice at booking time."""
+    meeting_id = str(uuid.uuid4())[:10]
+    topic = (payload.session_topic or "TalentConnect Session").replace(" ", "-")
+
+    if payload.provider == "google_meet":
+         link = "https://meet.google.com/new"
+    elif payload.provider == "zoom":
+        link = f"https://zoom.us/j/{meeting_id}?pwd=talentconnect"
+    elif payload.provider == "webrtc":
+        link = f"https://webrtc.talentconnect.local/room/{meeting_id}-{topic}"
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported meeting provider")
+
+    return {
+        "provider": payload.provider,
+        "meeting_link": link
+    }
 
 @router.post("/request", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_session_request(request_data: SessionRequestCreate, current_user_id: str = Depends(get_current_user)):
@@ -294,6 +333,8 @@ async def update_session(session_id: str, update_data: SessionUpdate, current_us
             update_dict['meeting_link'] = update_data.meeting_link
         if update_data.scheduled_at is not None:
             update_dict['scheduled_at'] = update_data.scheduled_at.isoformat()
+        if update_data.duration_minutes is not None:
+            update_dict['duration_minutes'] = update_data.duration_minutes
         if update_data.status is not None:
             update_dict['status'] = update_data.status
         if update_data.mentor_notes is not None:

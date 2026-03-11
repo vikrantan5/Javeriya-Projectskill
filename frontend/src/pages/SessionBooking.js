@@ -57,6 +57,13 @@ const SessionBooking = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+    const [meetingModal, setMeetingModal] = useState(false);
+  const [meetingForm, setMeetingForm] = useState({
+    provider: 'google_meet',
+    date: '',
+    time: '',
+    duration_minutes: 60,
+  });
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -86,7 +93,20 @@ const SessionBooking = () => {
     setLoading(true);
     try {
       const data = await sessionService.getMySessions();
-      setSessions(Array.isArray(data) ? data : []);
+       const normalizedSessions = Array.isArray(data)
+        ? data.map((item) => {
+            if (item?.session) {
+              return {
+                ...item.session,
+                role: item.role,
+                mentor_name: item.mentor?.full_name || item.mentor?.username,
+                learner_name: item.learner?.full_name || item.learner?.username,
+              };
+            }
+            return item;
+          })
+        : [];
+      setSessions(normalizedSessions);
     } catch (error) {
       console.error('Error loading sessions:', error);
       setSessions([]);
@@ -98,6 +118,45 @@ const SessionBooking = () => {
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+   const openMeetingModal = (session) => {
+    setSelectedSession(session);
+    const scheduleDate = session?.scheduled_at ? new Date(session.scheduled_at) : null;
+    setMeetingForm({
+      provider: 'google_meet',
+      date: scheduleDate ? scheduleDate.toISOString().slice(0, 10) : '',
+      time: scheduleDate ? scheduleDate.toISOString().slice(11, 16) : '',
+      duration_minutes: session?.duration_minutes || 60,
+    });
+    setMeetingModal(true);
+  };
+
+  const handleSaveMeetingLink = async () => {
+    if (!selectedSession) return;
+    setLoading(true);
+    try {
+      const generated = await sessionService.generateMeetingLink(
+        meetingForm.provider,
+        selectedSession.skill_name || 'TalentConnect Session'
+      );
+
+      const payload = {
+        meeting_link: generated.meeting_link,
+        duration_minutes: Number(meetingForm.duration_minutes || 60),
+      };
+
+      if (meetingForm.date && meetingForm.time) {
+        payload.scheduled_at = new Date(`${meetingForm.date}T${meetingForm.time}:00`).toISOString();
+      }
+
+      await sessionService.updateSession(selectedSession.id, payload);
+      setMeetingModal(false);
+      await loadSessions();
+    } catch (error) {
+      console.error('Meeting link setup failed:', error);
+    }
+    setLoading(false);
   };
 
   const getStatusIcon = (status) => {
@@ -403,6 +462,30 @@ const SessionBooking = () => {
                           Join Meeting
                         </a>
                       )}
+                       {!selectedSession.meeting_link && selectedSession.role === 'mentor' && (
+                    <button
+                      onClick={() => {
+                        setShowDetails(false);
+                        openMeetingModal(selectedSession);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                      data-testid="details-set-meeting-link-button"
+                    >
+                      <LinkIcon className="w-5 h-5" />
+                      Set Meeting Link
+                    </button>
+                  )}
+                       {!session.meeting_link && session.role === 'mentor' && (
+                        <button
+                          onClick={() => openMeetingModal(session)}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                          data-testid="session-set-meeting-link-button"
+                        >
+                          <LinkIcon className="w-4 h-4" />
+                          Set Meeting Link
+                        </button>
+                      )}
+                      
                       
                       <button
                         onClick={() => {
@@ -546,6 +629,22 @@ const SessionBooking = () => {
                       Join Meeting
                     </a>
                   )}
+
+                     {!selectedSession.meeting_link && selectedSession.role === 'mentor' && (
+                    <button
+                      onClick={() => {
+                        setShowDetails(false);
+                        openMeetingModal(selectedSession);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                      data-testid="details-set-meeting-link-button"
+                    >
+                      <LinkIcon className="w-5 h-5" />
+                      Set Meeting Link
+                    </button>
+                  )}
+                  
+                  
                   
                   <button className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Reschedule
@@ -556,6 +655,77 @@ const SessionBooking = () => {
                       Cancel
                     </button>
                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+          {meetingModal && selectedSession && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setMeetingModal(false)} data-testid="meeting-link-setup-modal">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6">
+                <div className="absolute inset-0 bg-black/20"></div>
+                <div className="relative flex justify-between items-start">
+                  <h2 className="text-2xl font-bold text-white">Set Meeting Link</h2>
+                  <button onClick={() => setMeetingModal(false)} className="p-2 bg-white/20 rounded-lg">
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700 dark:text-gray-300">Provider</label>
+                  <select
+                    value={meetingForm.provider}
+                    onChange={(e) => setMeetingForm({ ...meetingForm, provider: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    data-testid="meeting-provider-select"
+                  >
+                    <option value="google_meet">Google Meet</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="webrtc">WebRTC Room</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-700 dark:text-gray-300">Date</label>
+                    <input
+                      type="date"
+                      value={meetingForm.date}
+                      onChange={(e) => setMeetingForm({ ...meetingForm, date: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900"
+                      data-testid="meeting-date-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-700 dark:text-gray-300">Time</label>
+                    <input
+                      type="time"
+                      value={meetingForm.time}
+                      onChange={(e) => setMeetingForm({ ...meetingForm, time: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900"
+                      data-testid="meeting-time-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setMeetingModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl"
+                    data-testid="meeting-modal-cancel-button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveMeetingLink}
+                    className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+                    data-testid="meeting-modal-save-button"
+                  >
+                    Save Link
+                  </button>
                 </div>
               </div>
             </div>

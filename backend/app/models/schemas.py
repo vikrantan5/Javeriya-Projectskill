@@ -117,9 +117,16 @@ class SessionResponse(BaseModel):
 class SessionUpdate(BaseModel):
     meeting_link: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    
+    duration_minutes: Optional[int] = None
     status: Optional[str] = None
     mentor_notes: Optional[str] = None
     learner_notes: Optional[str] = None
+
+
+class MeetingLinkGenerateRequest(BaseModel):
+    session_id: UUID
+    platform: Optional[str] = "google_meet"
 
 # =====================================================
 # REVIEW SCHEMAS
@@ -143,6 +150,19 @@ class ReviewResponse(BaseModel):
 # =====================================================
 # TASK SCHEMAS
 # =====================================================
+class SkillExchangeTaskCreate(BaseModel):
+    title: str = Field(..., min_length=10, max_length=500)
+    description: str
+    skill_offered: str
+    skill_wanted: str
+    difficulty_level: Optional[str] = None
+    deadline: Optional[datetime] = None
+    estimated_hours: Optional[int] = None
+
+
+class SkillExchangeTaskAccept(BaseModel):
+    task_id: UUID
+    message: Optional[str] = None
 
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=10, max_length=500)
@@ -198,6 +218,11 @@ class PaymentCreate(BaseModel):
     task_id: UUID
     amount: float
     currency: str = "INR"
+
+class PaymentVerifyRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
 class PaymentResponse(BaseModel):
     id: UUID
