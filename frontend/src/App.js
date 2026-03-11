@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 import Chatbot from './pages/Chatbot';
 import AdminDashboard from './pages/AdminDashboard';
 import SessionBooking from './pages/SessionBooking';
+import Leaderboard from './pages/Leaderboard';
 
 // Auth context
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -97,6 +98,14 @@ function App() {
               <AdminRoute>
                 <AdminDashboard />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
+              </ProtectedRoute>
             }
           />
         </Routes>

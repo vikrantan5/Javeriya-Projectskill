@@ -57,6 +57,7 @@ const Navbar = () => {
     { path: '/skills', label: 'Skills', icon: Code2, color: 'blue' },
     { path: '/tasks', label: 'Tasks', icon: Briefcase, color: 'green' },
     { path: '/sessions', label: 'Sessions', icon: Calendar, color: 'purple' },
+      { path: '/leaderboard', label: 'Leaderboard', icon: Award, color: 'yellow' },
     { path: '/chatbot', label: 'AI Assistant', icon: Bot, color: 'pink', badge: 'New' },
   ];
 
