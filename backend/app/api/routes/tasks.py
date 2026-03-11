@@ -25,7 +25,9 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
             'price': float(task_data.price),
             'currency': 'INR',
             'deadline': task_data.deadline.isoformat(),
-            'attachment_urls': task_data.attachment_urls or [],
+            'attachment_urls': task_data.attachment_urls or task_data.attachments or [],
+            'requirements': task_data.requirements,
+            'estimated_hours': task_data.estimated_hours,
             'status': 'open'
         }
         

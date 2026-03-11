@@ -152,6 +152,9 @@ class TaskCreate(BaseModel):
     price: float = Field(..., gt=0)
     deadline: datetime
     attachment_urls: Optional[List[str]] = None
+    attachments: Optional[List[str]] = None
+    requirements: Optional[str] = None
+    estimated_hours: Optional[int] = None
 
 class TaskResponse(BaseModel):
     id: UUID

@@ -99,7 +99,25 @@ const TaskMarketplace = () => {
       } else {
         data = await taskService.getAllTasks(activeTab);
       }
-      setTasks(Array.isArray(data) ? data : []);
+      // Extract tasks from response - handle both flat and nested structures
+      let processedTasks = [];
+      if (Array.isArray(data)) {
+        processedTasks = data.map(item => {
+          // If item has 'task' property, extract and merge with creator info
+          if (item.task) {
+            return {
+              ...item.task,
+              creator_name: item.creator?.full_name || item.creator?.username,
+              creator_photo: item.creator?.profile_photo,
+              creator_rating: item.creator?.average_rating
+            };
+          }
+          // Otherwise it's already a flat task object
+          return item;
+        });
+      }
+      
+      setTasks(processedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       showNotification('Failed to load tasks', 'error');
