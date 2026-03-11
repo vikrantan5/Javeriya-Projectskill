@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
-import { taskService } from '../services/apiService';
-import { ArrowLeftRight, Plus, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import RealtimeChat from '../components/RealtimeChat';
+import { ArrowLeftRight, Plus, RefreshCw, CheckCircle, AlertCircle, MessageSquare, Calendar, X } from 'lucide-react';
 
 const initialForm = {
   skill_offered: '',
@@ -10,6 +11,7 @@ const initialForm = {
 };
 
 const SkillExchangeMarketplace = () => {
+    const { user } = useAuth();
     const getErrorMessage = (error, fallbackMessage) => {
     const detail = error?.response?.data?.detail;
 
@@ -43,6 +45,18 @@ const SkillExchangeMarketplace = () => {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+
+   // Chat and Meeting states
+  const [showChat, setShowChat] = useState(false);
+  const [chatTask, setChatTask] = useState(null);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetingTask, setMeetingTask] = useState(null);
+  const [meetingForm, setMeetingForm] = useState({
+    meeting_date: '',
+    meeting_topic: '',
+    meeting_duration_minutes: 60
+  });
 
   const showToast = (message, type = 'success') => {
     const safeMessage = typeof message === 'string' ? message : String(message ?? 'Unexpected error');
@@ -95,6 +109,40 @@ const SkillExchangeMarketplace = () => {
     setLoading(false);
   };
 
+
+  const handleOpenChat = (task) => {
+    setChatTask(task);
+    setShowChat(true);
+  };
+
+  const handleOpenMeeting = (task) => {
+    setMeetingTask(task);
+    setMeetingForm({
+      meeting_date: '',
+      meeting_topic: `${task.skill_offered} ↔ ${task.skill_requested} Session`,
+      meeting_duration_minutes: 60
+    });
+    setShowMeetingModal(true);
+  };
+
+  const handleScheduleMeeting = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await sessionService.createSkillExchangeSession(
+        meetingTask.id,
+        meetingForm.meeting_date,
+        meetingForm.meeting_topic,
+        meetingForm.meeting_duration_minutes
+      );
+      showToast('Meeting scheduled successfully!');
+      setShowMeetingModal(false);
+      setMeetingTask(null);
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Failed to schedule meeting'), 'error');
+    }
+    setLoading(false);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-sky-50/40 to-emerald-50/30 dark:from-gray-900 dark:via-sky-950 dark:to-emerald-950" data-testid="skill-exchange-page">
       <Navbar />
@@ -203,13 +251,15 @@ const SkillExchangeMarketplace = () => {
                     No exchange tasks found.
                   </div>
                 ) : (
-                  (activeTab === 'marketplace' ? marketplaceTasks : myTasks).map((item) => {
+                                    (activeTab === 'marketplace' ? marketplaceTasks : myTasks).map((item) => {
                     const exchangeTask = item.task || item;
                     const creator = item.creator;
+                    const isMatched = exchangeTask.status === 'matched';
+                    const isMyTask = exchangeTask.creator_id === user?.id;
                     return (
                       <div key={exchangeTask.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4" data-testid="exchange-task-card">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
+                          <div className="flex-1">
                             <p className="text-xs uppercase text-gray-500 mb-2" data-testid="exchange-task-status">{exchangeTask.status}</p>
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="exchange-skill-pair">
                               {exchangeTask.skill_offered} ↔ {exchangeTask.skill_requested}
@@ -222,15 +272,38 @@ const SkillExchangeMarketplace = () => {
                             )}
                           </div>
 
-                          {activeTab === 'marketplace' && exchangeTask.status === 'open' && (
-                            <button
-                              onClick={() => handleAccept(exchangeTask.id)}
-                              className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
-                              data-testid="exchange-accept-button"
-                            >
-                              Accept Match
-                            </button>
-                          )}
+                          <div className="flex gap-2">
+                            {activeTab === 'marketplace' && exchangeTask.status === 'open' && (
+                              <button
+                                onClick={() => handleAccept(exchangeTask.id)}
+                                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap"
+                                data-testid="exchange-accept-button"
+                              >
+                                Accept Match
+                              </button>
+                            )}
+                            
+                            {isMatched && activeTab === 'my' && (
+                              <>
+                                <button
+                                  onClick={() => handleOpenChat(exchangeTask)}
+                                  className="px-4 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2 whitespace-nowrap"
+                                  data-testid="exchange-chat-button"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                  Chat
+                                </button>
+                                <button
+                                  onClick={() => handleOpenMeeting(exchangeTask)}
+                                  className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-2 whitespace-nowrap"
+                                  data-testid="exchange-schedule-button"
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  Schedule
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -241,6 +314,122 @@ const SkillExchangeMarketplace = () => {
           </div>
         </div>
       </div>
+      {/* Chat Modal */}
+      {showChat && chatTask && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-testid="exchange-chat-modal">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl h-[600px]">
+            <RealtimeChat
+              roomType="task"
+              roomId={chatTask.id}
+              onClose={() => setShowChat(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Meeting Scheduling Modal */}
+      {showMeetingModal && meetingTask && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowMeetingModal(false)} data-testid="exchange-meeting-modal">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-sky-600 rounded-t-2xl p-6">
+              <div className="absolute inset-0 bg-black/20 rounded-t-2xl"></div>
+              <div className="relative flex justify-between items-start">
+                <h2 className="text-2xl font-bold text-white">Schedule Meeting</h2>
+                <button
+                  onClick={() => setShowMeetingModal(false)}
+                  className="p-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition-colors"
+                  data-testid="meeting-modal-close"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleScheduleMeeting} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Meeting Date & Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  min={new Date().toISOString().slice(0, 16)}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={meetingForm.meeting_date}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, meeting_date: e.target.value })}
+                  data-testid="meeting-date-input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Meeting Topic *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={meetingForm.meeting_topic}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, meeting_topic: e.target.value })}
+                  data-testid="meeting-topic-input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Duration (minutes)
+                </label>
+                <select
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={meetingForm.meeting_duration_minutes}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, meeting_duration_minutes: parseInt(e.target.value) })}
+                  data-testid="meeting-duration-select"
+                >
+                  <option value={30}>30 minutes</option>
+                  <option value={60}>60 minutes</option>
+                  <option value={90}>90 minutes</option>
+                  <option value={120}>120 minutes</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowMeetingModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  data-testid="meeting-cancel-button"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-sky-600 text-white px-4 py-3 rounded-xl hover:from-indigo-700 hover:to-sky-700 disabled:opacity-50 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                  data-testid="meeting-schedule-button"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Scheduling...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-4 h-4" />
+                      Schedule Meeting
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                📅 After scheduling, you can use Google Meet or any other platform for your session.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
