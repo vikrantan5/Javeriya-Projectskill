@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import RealtimeChat from '../components/RealtimeChat';
+import { taskService, sessionService } from '../services/apiService';
 import { ArrowLeftRight, Plus, RefreshCw, CheckCircle, AlertCircle, MessageSquare, Calendar, X } from 'lucide-react';
 
 const initialForm = {

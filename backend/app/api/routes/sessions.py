@@ -17,6 +17,125 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
+from pydantic import BaseModel
+from datetime import datetime
+
+class SkillExchangeSessionCreate(BaseModel):
+    exchange_task_id: str
+    meeting_date: str
+    meeting_topic: str
+    meeting_duration_minutes: int = 60
+
+@router.post("/skill-exchange-session", response_model=dict)
+async def create_skill_exchange_session(
+    session_data: SkillExchangeSessionCreate,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Create a skill exchange session with Google Meet scheduling"""
+    try:
+        db = get_db()
+        
+        # Get the exchange task
+        task_result = db.table('skill_exchange_tasks').select('*').eq('id', session_data.exchange_task_id).execute()
+        if not task_result.data:
+            raise HTTPException(status_code=404, detail="Skill exchange task not found")
+        
+        task = task_result.data[0]
+        
+        # Verify user is part of this exchange
+        if task['creator_id'] != current_user_id and task.get('matched_user_id') != current_user_id:
+            raise HTTPException(status_code=403, detail="You are not part of this skill exchange")
+        
+        # Determine participants
+        participant1_id = task['creator_id']
+        participant2_id = task.get('matched_user_id')
+        
+        if not participant2_id:
+            raise HTTPException(status_code=400, detail="Exchange not matched yet")
+        
+        # Generate Google Meet link
+        meeting_link = "https://meet.google.com/new"
+        
+        # Create session record
+        new_session = {
+            'exchange_task_id': session_data.exchange_task_id,
+            'participant1_id': participant1_id,
+            'participant2_id': participant2_id,
+            'meeting_date': session_data.meeting_date,
+            'meeting_duration_minutes': session_data.meeting_duration_minutes,
+            'meeting_topic': session_data.meeting_topic,
+            'meeting_link': meeting_link,
+            'status': 'scheduled',
+            'created_by': current_user_id
+        }
+        
+        result = db.table('skill_exchange_sessions').insert(new_session).execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to create session")
+        
+        # Notify both participants
+        other_user_id = participant2_id if current_user_id == participant1_id else participant1_id
+        
+        db.table('notifications').insert({
+            'user_id': other_user_id,
+            'title': 'Skill Exchange Session Scheduled! 📅',
+            'message': f'Meeting scheduled for {session_data.meeting_topic} on {session_data.meeting_date}',
+            'notification_type': 'session_scheduled',
+            'reference_id': result.data[0]['id'],
+            'reference_type': 'skill_exchange_session'
+        }).execute()
+        
+        return {
+            "message": "Session scheduled successfully",
+            "session": result.data[0],
+            "meeting_link": meeting_link
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating skill exchange session: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/skill-exchange-sessions", response_model=List[dict])
+async def get_skill_exchange_sessions(current_user_id: str = Depends(get_current_user)):
+    """Get all skill exchange sessions for current user"""
+    try:
+        db = get_db()
+        
+        # Get sessions where user is participant
+        result = db.table('skill_exchange_sessions').select('*').or_(
+            f'participant1_id.eq.{current_user_id},participant2_id.eq.{current_user_id}'
+        ).order('meeting_date', desc=False).execute()
+        
+        if not result.data:
+            return []
+        
+        # Get user details and task details
+        sessions_with_details = []
+        for session in result.data:
+            # Get task details
+            task_result = db.table('skill_exchange_tasks').select('*').eq('id', session['exchange_task_id']).execute()
+            task = task_result.data[0] if task_result.data else None
+            
+            # Get other participant details
+            other_user_id = session['participant2_id'] if session['participant1_id'] == current_user_id else session['participant1_id']
+            user_result = db.table('users').select('id, username, full_name, profile_photo').eq('id', other_user_id).execute()
+            other_user = user_result.data[0] if user_result.data else None
+            
+            sessions_with_details.append({
+                'session': session,
+                'task': task,
+                'other_participant': other_user
+            })
+        
+        return sessions_with_details
+        
+    except Exception as e:
+        logger.error(f"Error fetching skill exchange sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/meeting-providers")
 async def get_meeting_providers(current_user_id: str = Depends(get_current_user)):
