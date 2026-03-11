@@ -124,7 +124,7 @@ class ResumeParser:
             for skill in self.all_skills:
                 # Use word boundaries to avoid partial matches
                   pattern = r'\b' + re.escape(skill.lower()) + r'\b'
-                if re.search(pattern, text_lower):
+                  if re.search(pattern, text_lower):
                     found_skills.add(skill.title())
             
             # Additional NLP-based extraction using spaCy

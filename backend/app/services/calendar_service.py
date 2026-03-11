@@ -104,13 +104,19 @@ class CalendarService:
             if session.get('meeting_link'):
                 description += f"\n\nMeeting Link: {session['meeting_link']}"
             
-            # Generate Google Calendar link
+            # Generate Google Calendar link - fixed to avoid backslash in f-string
             base_url = "https://calendar.google.com/calendar/render"
+             # Escape description properly
+            encoded_desc = description.replace(' ', '+').replace('', '%0A')
+            
+            # Replace newlines with %0A separately
+            description_encoded = description.replace(' ', '+').replace('\n', '%0A')
+            
             params = [
                 f"action=TEMPLATE",
                 f"text={title.replace(' ', '+')}",
                 f"dates={start_str}/{end_str}",
-                f"details={description.replace(' ', '+').replace('\n', '%0A')}",
+                               f"details={encoded_desc}",
                 f"sf=true",
                 f"output=xml"
             ]
