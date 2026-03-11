@@ -41,6 +41,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     profile_photo: Optional[str] = None
+    background_photo: Optional[str] = None
     location: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None

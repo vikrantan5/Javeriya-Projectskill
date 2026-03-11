@@ -328,6 +328,8 @@ async def update_user_profile(update_data: UserUpdate, current_user_id: str = De
             update_dict['bio'] = update_data.bio
         if update_data.profile_photo is not None:
             update_dict['profile_photo'] = update_data.profile_photo
+        if update_data.background_photo is not None:
+            update_dict['background_photo'] = update_data.background_photo
         if update_data.location is not None:
             update_dict['location'] = update_data.location
         if update_data.phone is not None:

@@ -177,22 +177,22 @@ const Navbar = () => {
             </div>
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+            {/* <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               <Bell className="w-5 h-5" />
               {notifications > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                   {notifications}
                 </span>
               )}
-            </button>
+            </button> */}
 
             {/* Dark Mode Toggle */}
-            <button
+            {/* <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            </button> */}
 
             {/* Profile Dropdown */}
             <div className="relative">
