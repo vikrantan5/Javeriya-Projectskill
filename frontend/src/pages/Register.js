@@ -56,33 +56,21 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Password strength checker with byte length validation
+    // Simple password validation
   useEffect(() => {
     if (!formData.password) {
       setPasswordStrength(0);
-      setPasswordByteLength(0);
       setPasswordError('');
       return;
     }
 
-    // Check byte length (bcrypt limitation)
-    const byteLength = new TextEncoder().encode(formData.password).length;
-    setPasswordByteLength(byteLength);
-    
-    if (byteLength > 72) {
-      setPasswordError('Password is too long. Maximum 72 characters allowed.');
+    if (formData.password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long');
       setPasswordStrength(0);
-      return;
     } else {
       setPasswordError('');
+      setPasswordStrength(100);
     }
-
-    let strength = 0;
-    if (formData.password.length >= 8) strength += 25;
-    if (/[A-Z]/.test(formData.password)) strength += 25;
-    if (/[0-9]/.test(formData.password)) strength += 25;
-    if (/[^A-Za-z0-9]/.test(formData.password)) strength += 25;
-    setPasswordStrength(strength);
   }, [formData.password]);
 
   // Simulate username availability check

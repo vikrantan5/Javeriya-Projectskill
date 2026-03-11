@@ -86,12 +86,17 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      if (user) {
+       // Load user stats from API
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.get(`${BACKEND_URL}/api/users/me/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setStats({
-          totalSessions: user.total_sessions || 0,
-          totalTasks: user.total_tasks_completed || 0,
-          totalSkills: user.skills_offered?.length || 0,
-          averageRating: user.average_rating || 0,
+         totalSessions: response.data.total_sessions || 0,
+          totalTasks: response.data.total_tasks_completed || 0,
+          totalSkills: user?.skills_offered?.length || 0,
+          averageRating: response.data.average_rating || 0,
         });
       }
       setLoading(false);
@@ -101,24 +106,61 @@ const Dashboard = () => {
     }
   };
 
-  const loadRecommendedSkills = () => {
+const loadRecommendedSkills = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.get(`${BACKEND_URL}/api/users/recommended-skills`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setRecommendedSkills(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading recommended skills:', error);
+      // Fallback to default skills
     setRecommendedSkills([
-      { name: 'React Development', icon: Code, color: 'from-blue-500 to-cyan-400', bgColor: 'blue', students: 1234 },
-      { name: 'UI/UX Design', icon: Palette, color: 'from-purple-500 to-pink-400', bgColor: 'purple', students: 987 },
-      { name: 'Digital Marketing', icon: Globe, color: 'from-green-500 to-emerald-400', bgColor: 'green', students: 756 },
-      { name: 'Photography', icon: Camera, color: 'from-orange-500 to-red-400', bgColor: 'orange', students: 543 },
-      { name: 'Music Production', icon: Music, color: 'from-indigo-500 to-purple-400', bgColor: 'indigo', students: 321 },
-      { name: 'Content Writing', icon: PenTool, color: 'from-pink-500 to-rose-400', bgColor: 'pink', students: 234 },
+       { name: 'React Development', icon: 'Code', color: 'blue', students: 0 },
+        { name: 'UI/UX Design', icon: 'Palette', color: 'purple', students: 0 },
+        { name: 'Digital Marketing', icon: 'Globe', color: 'green', students: 0 },
+        { name: 'Photography', icon: 'Camera', color: 'orange', students: 0 },
     ]);
+  }
   };
 
-  const loadRecentActivities = () => {
-    setRecentActivities([
-      { type: 'session', title: 'Completed React Workshop', time: '2 hours ago', icon: BookOpen, color: 'blue' },
-      { type: 'task', title: 'Finished UI Design Task', time: '5 hours ago', icon: Briefcase, color: 'green' },
-      { type: 'rating', title: 'Received 5-star rating', time: '1 day ago', icon: Star, color: 'yellow' },
-      { type: 'skill', title: 'Added Python to skills', time: '2 days ago', icon: Code, color: 'purple' },
-    ]);
+ const loadRecentActivities = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await axios.get(`${BACKEND_URL}/api/users/me/recent-activities`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Format activities with time ago
+        const formattedActivities = (response.data || []).map(activity => ({
+          ...activity,
+          time: getTimeAgo(activity.time)
+        }));
+        
+        setRecentActivities(formattedActivities);
+      }
+    } catch (error) {
+      console.error('Error loading recent activities:', error);
+      setRecentActivities([]);
+    }
+  };
+
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return 'Recently';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return `${Math.floor(seconds / 604800)} weeks ago`;
   };
 
   const loadTokenBalance = async () => {

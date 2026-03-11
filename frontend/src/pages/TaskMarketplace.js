@@ -135,7 +135,16 @@ const TaskMarketplace = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await taskService.createTask(newTask);
+        // Prepare task data with proper formatting
+      const taskDataToSubmit = {
+        ...newTask,
+        deadline: new Date(newTask.deadline).toISOString(),
+        price: parseFloat(newTask.price),
+        estimated_hours: newTask.estimated_hours ? parseInt(newTask.estimated_hours) : null,
+        attachment_urls: newTask.attachments || []
+      };
+      
+      await taskService.createTask(taskDataToSubmit);
       showNotification('Task created successfully!', 'success');
       setShowCreateTask(false);
       setNewTask({

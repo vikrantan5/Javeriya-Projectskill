@@ -17,80 +17,19 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Security scheme
 security = HTTPBearer()
 
-def pre_hash_password(password: str) -> str:
-    """
-    Pre-hash the password if it's too long for bcrypt (72 byte limit).
-    Uses SHA-256 to create a fixed-length hash of long passwords.
-    This maintains security while working within bcrypt's limitations.
-    
-    Args:
-        password: The plain text password
-        
-    Returns:
-        Either the original password (if within limit) or SHA-256 hash
-    """
-    # Check password length in bytes (not characters - important for Unicode!)
-    password_bytes = password.encode('utf-8')
-    if len(password_bytes) > 72:
-        logger.warning(f"Password too long ({len(password_bytes)} bytes), pre-hashing with SHA-256")
-        # SHA-256 produces a 64-character hex string (32 bytes) - well within bcrypt's limit
-        return hashlib.sha256(password_bytes).hexdigest()
-    return password
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a password against its hash.
-    Handles both normally hashed and pre-hashed passwords.
-    
-    Args:
-        plain_password: The plain text password to verify
-        hashed_password: The stored hash to verify against
-        
-    Returns:
-        True if password matches, False otherwise
+   Verify a password against its hash
     """
-    try:
-        # First try normal verification
-        if pwd_context.verify(plain_password, hashed_password):
-            return True
-            
-        # If normal verification fails, try with pre-hashed version
-        # This handles the case where the password was pre-hashed during registration
-        pre_hashed = pre_hash_password(plain_password)
-        if pre_hashed != plain_password:  # Only if pre-hashing actually changed it
-            return pwd_context.verify(pre_hashed, hashed_password)
-            
-        return False
-    except Exception as e:
-        logger.error(f"Password verification error: {str(e)}")
-        return False
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
-    Hash a password, automatically handling passwords that are too long for bcrypt.
-    
-    Args:
-        password: The plain text password to hash
-        
-    Returns:
-        bcrypt hash of the password (or pre-hashed password)
+   Hash a password using bcrypt
     """
-    try:
-        # Pre-hash if password is too long
-        processed_password = pre_hash_password(password)
-        
-        # Log password length for monitoring (but not the actual password!)
-        password_bytes = password.encode('utf-8')
-        logger.debug(f"Hashing password of length: {len(password)} chars, {len(password_bytes)} bytes")
-        
-        # Hash with bcrypt
-        return pwd_context.hash(processed_password)
-    except Exception as e:
-        logger.error(f"Password hashing error: {str(e)}")
-        # Re-raise with a user-friendly message
-        if "password cannot be longer than 72 bytes" in str(e).lower():
-            raise ValueError("Password is too long. Maximum 72 bytes allowed.")
-        raise ValueError(f"Password hashing failed: {str(e)}")
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create JWT access token"""
