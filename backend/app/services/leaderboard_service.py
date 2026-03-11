@@ -122,20 +122,28 @@ class LeaderboardService:
             
             leaderboard = []
             if result.data:
-                # Get user details
+ # Get user details including trust_score
                 user_ids = [entry['user_id'] for entry in result.data]
-                users_result = db.table('users').select('id, username, full_name, profile_photo, average_rating, total_sessions').in_('id', user_ids).execute()
+                users_result = db.table('users').select('id, username, full_name, profile_photo, average_rating, total_sessions, trust_score').in_('id', user_ids).execute()
                 
                 users_dict = {user['id']: user for user in users_result.data}
                 
                 for entry in result.data:
                     user = users_dict.get(entry['user_id'])
                     if user:
-                        leaderboard.append({
+                       leaderboard.append({
                             'rank': entry['rank'],
-                            'user': user,
+                            'user_id': entry['user_id'],
+                            'username': user['username'],
+                            'full_name': user.get('full_name'),
+                            'profile_photo': user.get('profile_photo'),
                             'score': entry['score'],
-                            'category': entry['category']
+                            'trust_score': user.get('trust_score', 0),
+                            'category': entry['category'],
+                            'stats': {
+                                'total_sessions': user.get('total_sessions', 0),
+                                'average_rating': user.get('average_rating', 0)
+                            }
                         })
             
             return leaderboard

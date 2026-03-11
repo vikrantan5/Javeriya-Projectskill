@@ -37,10 +37,24 @@ const Leaderboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/admin/leaderboard`, {
+      const response = await axios.get(`${BACKEND_URL}/api/leaderboard/`, {
         params: { category: activeCategory, limit: 20 }
       });
-      setLeaderboard(response.data.leaderboard || []);
+      // Transform data to match frontend expectations
+      const transformedData = response.data.leaderboard?.map(item => ({
+        rank: item.rank,
+        username: item.user?.username || item.username,
+        full_name: item.user?.full_name || item.full_name,
+        profile_photo: item.user?.profile_photo || item.profile_photo,
+        score: item.score,
+        trust_score: item.user?.trust_score || 0,
+        stats: {
+          total_sessions: item.user?.total_sessions || 0,
+          average_rating: item.user?.average_rating || 0
+        }
+      })) || [];
+      
+      setLeaderboard(transformedData);
     } catch (err) {
       console.error('Error loading leaderboard:', err);
       setError('Failed to load leaderboard');

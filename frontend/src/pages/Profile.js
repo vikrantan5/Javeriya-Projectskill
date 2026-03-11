@@ -63,21 +63,31 @@ const Profile = () => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState({
-    full_name: user?.full_name || '',
-    bio: user?.bio || 'Passionate learner and skill exchanger. Always excited to learn new technologies and help others grow.',
-    location: user?.location || 'New York, USA',
-    phone: user?.phone || '+1 234 567 8900',
-    website: user?.website || 'https://portfolio.example.com',
-    github: user?.github || 'github.com/username',
-    twitter: user?.twitter || 'twitter.com/username',
-    linkedin: user?.linkedin || 'linkedin.com/in/username',
-    skills: user?.skills || ['React', 'JavaScript', 'Python', 'UI/UX', 'Node.js', 'MongoDB'],
-    interests: user?.interests || ['Machine Learning', 'Web Development', 'Cloud Computing', 'Mobile Apps'],
-    languages: user?.languages || ['English (Native)', 'Spanish (Intermediate)', 'French (Basic)'],
-    education: user?.education || 'B.Tech in Computer Science',
-    company: user?.company || 'Tech Innovators Inc.',
-    jobTitle: user?.jobTitle || 'Senior Developer'
+full_name: '',
+    bio: '',
+    location: '',
+    phone: '',
+    website: '',
+    github: '',
+    twitter: '',
+    linkedin: '',
+    skills: [],
+    interests: [],
+    languages: [],
+    education: '',
+    company: '',
+    jobTitle: ''
   });
+  const [userStats, setUserStats] = useState({
+    total_sessions: 0,
+    total_tasks_completed: 0,
+    average_rating: 0,
+    total_mentees: 0
+  });
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [profileCompletion, setProfileCompletion] = useState({ completion_percentage: 0, missing_fields: [] });
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const fileInputRef = useRef(null);
   const resumeInputRef = useRef(null);
@@ -94,9 +104,28 @@ const Profile = () => {
   const [uploadingResume, setUploadingResume] = useState(false);
   const [resumeResult, setResumeResult] = useState(null);
 
-  const handleSave = () => {
+const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(`${BACKEND_URL}/api/users/me`, {
+        full_name: profileData.full_name,
+        bio: profileData.bio,
+        location: profileData.location,
+        phone: profileData.phone,
+        website: profileData.website,
+        github: profileData.github,
+        twitter: profileData.twitter,
+        linkedin: profileData.linkedin
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
     alert('Profile updated successfully!');
     setIsEditing(false);
+     loadProfileData(); // Reload profile data
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile: ' + (error.response?.data?.detail || error.message));
+    }
   };
 
   const handleCopyProfileLink = () => {
@@ -118,11 +147,89 @@ const Profile = () => {
   // Load Trust Score
   useEffect(() => {
     if (user?.id) {
+      loadProfileData();
       loadTrustScore();
       loadTokenBalance();
       loadTokenTransactions();
+      loadUpcomingSessions();
+      loadConnections();
+      loadProfileCompletion();
     }
   }, [user]);
+
+  const loadProfileData = async () => {
+    setLoadingProfile(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const userData = response.data;
+      setProfileData({
+        full_name: userData.full_name || '',
+        bio: userData.bio || 'Passionate learner and skill exchanger. Always excited to learn new technologies and help others grow.',
+        location: userData.location || 'New York, USA',
+        phone: userData.phone || '+1 234 567 8900',
+        website: userData.website || 'https://portfolio.example.com',
+        github: userData.github || 'github.com/username',
+        twitter: userData.twitter || 'twitter.com/username',
+        linkedin: userData.linkedin || 'linkedin.com/in/username',
+        skills: userData.skills || ['React', 'JavaScript', 'Python'],
+        interests: userData.interests || ['Machine Learning', 'Web Development'],
+        languages: userData.languages || ['English (Native)'],
+        education: userData.education || 'B.Tech in Computer Science',
+        company: userData.company || 'Tech Innovators Inc.',
+        jobTitle: userData.job_title || 'Senior Developer'
+      });
+      
+      setUserStats({
+        total_sessions: userData.total_sessions || 0,
+        total_tasks_completed: userData.total_tasks_completed || 0,
+        average_rating: userData.average_rating || 0,
+        total_mentees: userData.connections_count || 0
+      });
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+    setLoadingProfile(false);
+  };
+
+  const loadUpcomingSessions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/upcoming-sessions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUpcomingSessions(response.data.sessions || []);
+    } catch (error) {
+      console.error('Error loading upcoming sessions:', error);
+    }
+  };
+
+  const loadConnections = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/connections`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConnections(response.data.connections || []);
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    }
+  };
+
+  const loadProfileCompletion = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/profile-completion`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfileCompletion(response.data);
+    } catch (error) {
+      console.error('Error loading profile completion:', error);
+    }
+  };
 
   const loadTrustScore = async () => {
     setLoadingTrust(true);
@@ -197,10 +304,10 @@ const Profile = () => {
     return { label: 'Aspiring Mentor', color: 'indigo', icon: '⭐', bgGradient: 'from-indigo-400 to-indigo-600' };
   };
   const stats = [
-    { icon: BookOpen, label: 'Sessions', value: user?.total_sessions || 128, color: 'blue', trend: '+12%' },
-    { icon: Briefcase, label: 'Tasks', value: user?.total_tasks_completed || 45, color: 'green', trend: '+8%' },
-    { icon: Star, label: 'Rating', value: user?.average_rating?.toFixed(1) || '4.8', suffix: '⭐', color: 'yellow', trend: '+0.2' },
-    { icon: Users, label: 'Mentees', value: user?.total_mentees || 56, color: 'purple', trend: '+15%' },
+  { icon: BookOpen, label: 'Sessions', value: userStats.total_sessions, color: 'blue', trend: '+12%' },
+    { icon: Briefcase, label: 'Tasks', value: userStats.total_tasks_completed, color: 'green', trend: '+8%' },
+    { icon: Star, label: 'Rating', value: userStats.average_rating?.toFixed(1) || '0.0', suffix: '⭐', color: 'yellow', trend: '+0.2' },
+    { icon: Users, label: 'Mentees', value: userStats.total_mentees, color: 'purple', trend: '+15%' },
   ];
 
   const achievements = [
@@ -819,48 +926,63 @@ const Profile = () => {
 
           {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Profile Completion */}
+                       {/* Profile Completion */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Completion</h3>
               <div className="relative pt-1">
                 <div className="flex mb-2 items-center justify-between">
                   <div>
                     <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200 dark:bg-indigo-900/30">
-                      In Progress
+                      {profileCompletion.completion_percentage === 100 ? 'Complete' : 'In Progress'}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-semibold inline-block text-indigo-600 dark:text-indigo-400">
-                      75%
+                      {profileCompletion.completion_percentage}%
                     </span>
                   </div>
                 </div>
                 <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-indigo-200 dark:bg-indigo-900/30">
-                  <div style={{ width: "75%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                  <div style={{ width: `${profileCompletion.completion_percentage}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-indigo-500 to-purple-500"></div>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className={`w-4 h-4 ${profileCompletion.missing_fields?.includes('Basic Info') ? 'text-gray-400' : 'text-green-500'}`} />
                   <span className="text-gray-700 dark:text-gray-300">Basic Info</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className={`w-4 h-4 ${profileCompletion.missing_fields?.includes('Skills Added') ? 'text-gray-400' : 'text-green-500'}`} />
                   <span className="text-gray-700 dark:text-gray-300">Skills Added</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  {profileCompletion.missing_fields?.includes('Profile Picture') ? (
+                    <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  )}
                   <span className="text-gray-700 dark:text-gray-300">Profile Picture</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  {profileCompletion.missing_fields?.includes('Verification') ? (
+                    <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  )}
                   <span className="text-gray-700 dark:text-gray-300">Verification</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  {profileCompletion.missing_fields?.includes('Connections') ? (
+                    <AlertCircle className="w-4 h-4 text-yellow-500" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  )}
+                  <span className="text-gray-700 dark:text-gray-300">Connections</span>
                 </div>
               </div>
             </div>
-
-            {/* Connections */}
+                       {/* Connections */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connections</h3>
@@ -868,39 +990,54 @@ const Profile = () => {
               </div>
               
               <div className="space-y-3">
-                {[1, 2, 3].map((_, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                        JD
+                {connections.length > 0 ? (
+                  connections.slice(0, 3).map((connection, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {connection.username?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{connection.full_name || connection.username}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{connection.primary_skill}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">John Doe</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">React Developer</p>
-                      </div>
+                      <button className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No connections yet</p>
+                )}
               </div>
             </div>
 
-            {/* Upcoming Sessions */}
+                       {/* Upcoming Sessions */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Sessions</h3>
               <div className="space-y-3">
-                {[1, 2].map((_, index) => (
-                  <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="font-medium text-gray-900 dark:text-white">React Workshop</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tomorrow, 3:00 PM</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">2 hours</span>
+                {upcomingSessions.length > 0 ? (
+                  upcomingSessions.slice(0, 2).map((session, index) => (
+                    <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="font-medium text-gray-900 dark:text-white">{session.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {session.scheduled_at ? new Date(session.scheduled_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        }) : 'Date TBD'}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{session.duration_minutes || 60} minutes</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No upcoming sessions</p>
+                )}
               </div>
             </div>
 
