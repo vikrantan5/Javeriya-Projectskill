@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from app.models.schemas import UserResponse, UserUpdate
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.token_service import token_service
 from uuid import UUID
 import logging
+import os
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +95,9 @@ async def get_token_transactions(limit: int = 20, current_user_id: str = Depends
             detail=str(e)
         )
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_current_user_profile(current_user_id: str = Depends(get_current_user)):
-    "Get current user profile with complete dat"
+    """Get current user profile with complete data including skills"""
     try:
         db = get_db()
         
@@ -107,7 +109,14 @@ async def get_current_user_profile(current_user_id: str = Depends(get_current_us
                 detail="User not found"
             )
         
-        return user_result.data[0]
+        user_data = user_result.data[0]
+        
+        # Get user's skills from user_skills table
+        skills_result = db.table('user_skills').select('skill_name, proficiency_level, is_verified').eq('user_id', current_user_id).execute()
+        user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
+        user_data['skills_detailed'] = skills_result.data or []
+        
+        return user_data
     
     except HTTPException:
         raise

@@ -88,9 +88,12 @@ full_name: '',
   const [connections, setConnections] = useState([]);
   const [profileCompletion, setProfileCompletion] = useState({ completion_percentage: 0, missing_fields: [] });
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [achievements, setAchievements] = useState([]);
 
   const fileInputRef = useRef(null);
   const resumeInputRef = useRef(null);
+   const avatarInputRef = useRef(null);
   const [avatar, setAvatar] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
@@ -115,7 +118,10 @@ const handleSave = async () => {
         website: profileData.website,
         github: profileData.github,
         twitter: profileData.twitter,
-        linkedin: profileData.linkedin
+        linkedin: profileData.linkedin,
+       
+        company: profileData.company,
+        job_title: profileData.jobTitle
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -134,11 +140,36 @@ const handleSave = async () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleImageUpload = (type, file) => {
-    if (type === 'avatar') {
-      setAvatar(URL.createObjectURL(file));
-    } else {
-      setCoverImage(URL.createObjectURL(file));
+   const handleImageUpload = async (type, file) => {
+    if (!file) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const endpoint = type === 'avatar' 
+        ? `${BACKEND_URL}/api/users/upload-profile-photo`
+        : `${BACKEND_URL}/api/users/upload-background-photo`;
+      
+      const response = await axios.post(endpoint, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (type === 'avatar') {
+        setAvatar(response.data.photo_url);
+      } else {
+        setCoverImage(response.data.photo_url);
+      }
+      
+      alert(response.data.message);
+      loadProfileData(); // Reload profile
+    } catch (error) {
+      console.error(`Error uploading ${type}:`, error);
+      alert(`Failed to upload ${type}: ` + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -183,8 +214,20 @@ const handleSave = async () => {
         jobTitle: userData.job_title || ''
       });
       
+      // Set avatar and cover image from backend
+      if (userData.profile_photo) {
+        setAvatar(userData.profile_photo);
+      }
+      if (userData.background_photo) {
+        setCoverImage(userData.background_photo);
+      }
+      
        // Load user stats from dedicated endpoint
       loadUserStats();
+      // Load dynamic activities
+      loadActivities();
+      // Load dynamic achievements
+      loadAchievements();
     } catch (error) {
       console.error('Error loading profile data:', error);
     }
@@ -279,6 +322,30 @@ const handleSave = async () => {
     }
   };
 
+   const loadActivities = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/my-activities?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecentActivity(response.data.activities || []);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+    }
+  };
+
+  const loadAchievements = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/achievements`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAchievements(response.data.achievements || []);
+    } catch (error) {
+      console.error('Error loading achievements:', error);
+    }
+  };
+
   const handleResumeUpload = async (file) => {
     setUploadingResume(true);
     setResumeResult(null);
@@ -318,19 +385,7 @@ const handleSave = async () => {
     { icon: Users, label: 'Mentees', value: userStats.total_mentees, color: 'purple', trend: '+15%' },
   ];
 
-  const achievements = [
-    { icon: Trophy, title: 'Top Mentor', description: 'Rated #1 in Web Development', date: 'Mar 2024', color: 'yellow' },
-    { icon: Medal, title: '100 Sessions', description: 'Completed 100 mentoring sessions', date: 'Feb 2024', color: 'purple' },
-    { icon: Crown, title: 'Rising Star', description: 'Most active user of the month', date: 'Jan 2024', color: 'indigo' },
-    { icon: Target, title: 'Skill Master', description: 'Mastered 10+ technologies', date: 'Dec 2023', color: 'green' },
-  ];
 
-  const recentActivity = [
-    { type: 'session', title: 'React Advanced Workshop', user: 'John Doe', time: '2 hours ago', icon: BookOpen },
-    { type: 'task', title: 'Frontend Development Task', user: 'Jane Smith', time: '5 hours ago', icon: Briefcase },
-    { type: 'feedback', title: '5-star rating received', user: 'Mike Johnson', time: '1 day ago', icon: Star },
-    { type: 'connection', title: 'New follower', user: 'Sarah Wilson', time: '2 days ago', icon: Users },
-  ];
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
@@ -443,13 +498,32 @@ const handleSave = async () => {
                     <Camera className="w-4 h-4" />
                   </button>
                   
-                  {showAvatarMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                                   {showAvatarMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-10">
+                      <input
+                        type="file"
+                        ref={avatarInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload('avatar', e.target.files[0])}
+                      />
+                      <button 
+                        onClick={() => {
+                          avatarInputRef.current?.click();
+                          setShowAvatarMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                      >
                         <Upload className="w-4 h-4" />
                         Upload Photo
                       </button>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setAvatar(null);
+                          setShowAvatarMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                      >
                         <X className="w-4 h-4" />
                         Remove Photo
                       </button>
@@ -856,15 +930,19 @@ const handleSave = async () => {
                     </div>
                   )}
                 </div>
-                {/* Skills */}
+                                {/* Skills */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Skills & Expertise</h3>
                   <div className="flex flex-wrap gap-2">
-                    {profileData.skills.map((skill, index) => (
-                      <span key={index} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg text-sm font-medium">
-                        {skill}
-                      </span>
-                    ))}
+                    {profileData.skills && profileData.skills.length > 0 ? (
+                      profileData.skills.map((skill, index) => (
+                        <span key={index} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg text-sm font-medium">
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400">No skills added yet. Upload your resume to automatically add skills!</p>
+                    )}
                   </div>
                 </div>
 
@@ -894,47 +972,76 @@ const handleSave = async () => {
                 </div>
               </div>
             )}
-
             {activeTab === 'activity' && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                 <div className="space-y-4">
-                  {recentActivity.map((activity, index) => {
-                    const Icon = activity.icon;
-                    return (
-                      <div key={index} className="flex items-start gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                          <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  {recentActivity.length > 0 ? (
+                    recentActivity.map((activity, index) => {
+                      // Map icon name string to actual icon component
+                      const iconMap = {
+                        'BookOpen': BookOpen,
+                        'Briefcase': Briefcase,
+                        'Star': Star,
+                        'Users': Users
+                      };
+                      const Icon = iconMap[activity.icon] || BookOpen;
+                      
+                      // Format time
+                      const timeAgo = activity.time ? new Date(activity.time).toLocaleString() : 'Recently';
+                      
+                      return (
+                        <div key={index} className="flex items-start gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                            <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">with {activity.user}</p>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-500">{timeAgo}</span>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">with {activity.user}</p>
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-500">{activity.time}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent activity</p>
+                  )}
                 </div>
               </div>
             )}
 
             {activeTab === 'achievements' && (
               <div className="grid md:grid-cols-2 gap-4">
-                {achievements.map((achievement, index) => {
-                  const Icon = achievement.icon;
-                  return (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 bg-${achievement.color}-100 dark:bg-${achievement.color}-900/30 rounded-xl`}>
-                          <Icon className={`w-6 h-6 text-${achievement.color}-600 dark:text-${achievement.color}-400`} />
+                {achievements.length > 0 ? (
+                  achievements.map((achievement, index) => {
+                    // Map icon name string to actual icon component
+                    const iconMap = {
+                      'Trophy': Trophy,
+                      'Medal': Medal,
+                      'Crown': Crown,
+                      'Target': Target,
+                      'Rocket': Rocket
+                    };
+                    const Icon = iconMap[achievement.icon] || Trophy;
+                    
+                    return (
+                      <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={`p-3 bg-${achievement.color}-100 dark:bg-${achievement.color}-900/30 rounded-xl`}>
+                            <Icon className={`w-6 h-6 text-${achievement.color}-600 dark:text-${achievement.color}-400`} />
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{achievement.date}</span>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{achievement.date}</span>
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{achievement.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{achievement.description}</p>
                       </div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{achievement.title}</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{achievement.description}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="col-span-2 text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">Keep learning and earning achievements!</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
