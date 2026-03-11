@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { skillService, taskService, sessionService } from '../services/apiService';
 import axios from 'axios';
+import CalendarWidget from '../components/CalendarWidget';
 import { 
   BookOpen, 
   CheckCircle, 
@@ -272,6 +273,14 @@ const Dashboard = () => {
                       <div className="px-4 py-2 bg-purple-400/20 backdrop-blur rounded-full text-purple-100 text-sm font-medium flex items-center gap-2">
                         <Trophy className="w-4 h-4" />
                         {stats.averageRating > 0 ? `${stats.averageRating} ⭐ Rating` : 'New Member'}
+                      </div>
+                       <div className="px-4 py-2 bg-green-400/20 backdrop-blur rounded-full text-green-100 text-sm font-medium flex items-center gap-2" data-testid="token-balance-badge">
+                        <Coins className="w-4 h-4" />
+                        {loadingTokens ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>Tokens: {tokenBalance?.balance || 0}</>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -569,39 +578,8 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* Upcoming Events */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
-                  Upcoming Events
-                </h3>
-                
-                <div className="space-y-3">
-                  {[
-                    { title: 'Web Dev Workshop', time: 'Today, 3:00 PM', attendees: 24, color: 'blue' },
-                    { title: 'UI/UX Design Session', time: 'Tomorrow, 11:00 AM', attendees: 18, color: 'purple' },
-                    { title: 'Python Masterclass', time: 'Wed, 2:00 PM', attendees: 32, color: 'green' },
-                  ].map((event, index) => (
-                    <div
-                      key={index}
-                      className="group p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:shadow-md transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{event.title}</h4>
-                        <span className={`px-2 py-1 bg-${event.color}-100 dark:bg-${event.color}-900/30 text-${event.color}-600 dark:text-${event.color}-400 text-xs rounded-full`}>
-                          {event.attendees} spots
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">{event.time}</span>
-                        <button className="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">
-                          Join
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+               {/* Calendar Widget */}
+              <CalendarWidget userId={user?.id} />
             </div>
           </div>
 

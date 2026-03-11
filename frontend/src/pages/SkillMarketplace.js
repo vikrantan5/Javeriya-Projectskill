@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import FindMentorModal from '../components/FindMentorModal';
+import SkillQuizModal from '../components/SkillQuizModal';
 import { skillService } from '../services/apiService';
 import {
   Search,
@@ -82,6 +83,7 @@ const SkillMarketplace = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [findMentorModal, setFindMentorModal] = useState({ show: false, skill: '' });
+    const [skillQuizModal, setSkillQuizModal] = useState({ show: false, skill: '', level: 'intermediate' });
 
   const handleAddSkill = async (e) => {
     e.preventDefault();
