@@ -151,8 +151,18 @@ export const taskService = {
     return response.data;
   },
 
-  acceptTask: async (taskId) => {
-    const response = await api.post(`/api/tasks/${taskId}/accept`);
+acceptTask: async (taskId, message = '') => {
+    const response = await api.post(`/api/tasks/${taskId}/accept`, { message });
+    return response.data;
+  },
+
+  getTaskAcceptors: async (taskId) => {
+    const response = await api.get(`/api/tasks/${taskId}/acceptors`);
+    return response.data;
+  },
+
+  assignTask: async (taskId, userId) => {
+    const response = await api.post(`/api/tasks/${taskId}/assign`, { user_id: userId });
     return response.data;
   },
 

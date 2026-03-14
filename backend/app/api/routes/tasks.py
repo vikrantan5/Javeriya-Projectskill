@@ -7,6 +7,9 @@ from app.models.schemas import (
     TaskSubmissionResponse,
     SkillExchangeTaskCreate,
     SkillExchangeTaskAccept,
+    TaskAcceptRequest,
+    TaskAssignRequest,
+    TaskAcceptorResponse,
 )
 from app.utils.auth import get_current_user
 from app.database import get_db
@@ -410,8 +413,12 @@ async def get_task(task_id: str):
         )
 
 @router.post("/{task_id}/accept")
-async def accept_task(task_id: str, current_user_id: str = Depends(get_current_user)):
-    """Accept a task"""
+async def accept_task(
+    task_id: str, 
+    accept_data: TaskAcceptRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Accept a task - adds user to acceptors list"""
     try:
         db = get_db()
         
@@ -440,26 +447,39 @@ async def accept_task(task_id: str, current_user_id: str = Depends(get_current_u
                 detail="You cannot accept your own task"
             )
         
-        # Update task
-        update_result = db.table('tasks').update({
-            'acceptor_id': current_user_id,
-            'status': 'accepted'
-        }).eq('id', task_id).execute()
+        # Check if user already accepted this task
+        existing_acceptance = db.table('task_acceptors').select('*').eq('task_id', task_id).eq('user_id', current_user_id).execute()
+        
+        if existing_acceptance.data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You have already accepted this task"
+            )
+        
+        # Add user to task acceptors
+        acceptor_data = {
+            'task_id': task_id,
+            'user_id': current_user_id,
+            'status': 'pending',
+            'message': accept_data.message
+        }
+        
+        acceptance_result = db.table('task_acceptors').insert(acceptor_data).execute()
         
         # Create notification for creator
         notification = {
             'user_id': task['creator_id'],
-            'title': 'Task Accepted',
-            'message': f'Your task "{task["title"]}" has been accepted',
-            'notification_type': 'task_update',
+            'title': 'New Task Application',
+            'message': f'Someone has applied to work on your task "{task["title"]}"',
+            'notification_type': 'task_accepted',
             'reference_id': task_id,
             'reference_type': 'task'
         }
         db.table('notifications').insert(notification).execute()
         
         return {
-            "message": "Task accepted successfully",
-            "task": update_result.data[0]
+            "message": "Task accepted successfully. Waiting for creator to assign.",
+            "acceptance": acceptance_result.data[0]
         }
     
     except HTTPException:
@@ -470,7 +490,148 @@ async def accept_task(task_id: str, current_user_id: str = Depends(get_current_u
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
 
+
+
+@router.get("/{task_id}/acceptors")
+async def get_task_acceptors(task_id: str, current_user_id: str = Depends(get_current_user)):
+    """Get list of users who accepted a task - only for task creator"""
+    try:
+        db = get_db()
+        
+        # Verify user is the task creator
+        task_result = db.table('tasks').select('*').eq('id', task_id).eq('creator_id', current_user_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found or you're not the creator"
+            )
+        
+        # Get acceptors
+        acceptors_result = db.table('task_acceptors').select('*').eq('task_id', task_id).order('accepted_at', desc=False).execute()
+        
+        if not acceptors_result.data:
+            return []
+        
+        # Get user details for acceptors
+        user_ids = [acceptor['user_id'] for acceptor in acceptors_result.data]
+        users_result = db.table('users').select('id, username, full_name, profile_photo, average_rating, total_tasks_completed').in_('id', user_ids).execute()
+        
+        users_dict = {user['id']: user for user in users_result.data}
+        
+        # Combine acceptor data with user details
+        acceptors_with_details = []
+        for acceptor in acceptors_result.data:
+            user_data = users_dict.get(acceptor['user_id'])
+            if user_data:
+                acceptors_with_details.append({
+                    **acceptor,
+                    'user': user_data
+                })
+        
+        return acceptors_with_details
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting task acceptors: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/{task_id}/assign")
+async def assign_task(
+    task_id: str, 
+    assign_data: TaskAssignRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Assign task to a specific user from acceptors list"""
+    try:
+        db = get_db()
+        
+        # Verify user is the task creator
+        task_result = db.table('tasks').select('*').eq('id', task_id).eq('creator_id', current_user_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found or you're not the creator"
+            )
+        
+        task = task_result.data[0]
+        
+        if task['status'] != 'open':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task is not open for assignment"
+            )
+        
+        # Verify the user is in acceptors list
+        acceptor_result = db.table('task_acceptors').select('*').eq('task_id', task_id).eq('user_id', str(assign_data.user_id)).execute()
+        
+        if not acceptor_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User has not accepted this task"
+            )
+        
+        # Update task status and assigned user
+        db.table('tasks').update({
+            'status': 'accepted',
+            'assigned_user_id': str(assign_data.user_id),
+            'acceptor_id': str(assign_data.user_id)  # Keep for backward compatibility
+        }).eq('id', task_id).execute()
+        
+        # Update acceptor status to assigned
+        db.table('task_acceptors').update({
+            'status': 'assigned'
+        }).eq('task_id', task_id).eq('user_id', str(assign_data.user_id)).execute()
+        
+        # Update other acceptors to rejected
+        db.table('task_acceptors').update({
+            'status': 'rejected'
+        }).eq('task_id', task_id).neq('user_id', str(assign_data.user_id)).execute()
+        
+        # Create notification for assigned user
+        db.table('notifications').insert({
+            'user_id': str(assign_data.user_id),
+            'title': 'Task Assigned to You!',
+            'message': f'You have been assigned to work on the task "{task["title"]}"',
+            'notification_type': 'task_assigned',
+            'reference_id': task_id,
+            'reference_type': 'task'
+        }).execute()
+        
+        # Notify rejected users
+        rejected_acceptors = db.table('task_acceptors').select('user_id').eq('task_id', task_id).eq('status', 'rejected').execute()
+        
+        for acceptor in rejected_acceptors.data:
+            db.table('notifications').insert({
+                'user_id': acceptor['user_id'],
+                'title': 'Task Assignment Update',
+                'message': f'The task "{task["title"]}" has been assigned to another user',
+                'notification_type': 'task_update',
+                'reference_id': task_id,
+                'reference_type': 'task'
+            }).execute()
+        
+        return {
+            "message": "Task assigned successfully",
+            "task_id": task_id,
+            "assigned_user_id": str(assign_data.user_id)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning task: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 @router.post("/{task_id}/submit")
 async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, current_user_id: str = Depends(get_current_user)):
     submission_text = submission_data.submission_text

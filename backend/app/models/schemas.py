@@ -213,6 +213,28 @@ class TaskSubmissionResponse(BaseModel):
     review_notes: Optional[str]
     submitted_at: datetime
 
+
+
+class TaskAcceptRequest(BaseModel):
+    message: Optional[str] = None
+
+class TaskAssignRequest(BaseModel):
+    user_id: UUID
+
+class TaskAcceptorResponse(BaseModel):
+    id: UUID
+    task_id: UUID
+    user_id: UUID
+    status: str
+    message: Optional[str]
+    accepted_at: datetime
+
+class RealtimeMessageCreate(BaseModel):
+    room_id: UUID
+    room_type: str = "task"
+    content: str
+    message_type: str = "text"
+
 # =====================================================
 # PAYMENT SCHEMAS
 # =====================================================
