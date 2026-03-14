@@ -254,7 +254,7 @@ const loadRecommendedSkills = async () => {
         </div>
 
         {/* Welcome Toast */}
-        {showWelcome && (
+        {/* {showWelcome && (
           <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-indigo-100 dark:border-gray-700 p-4 max-w-sm">
               <div className="flex items-start gap-3">
@@ -270,7 +270,7 @@ const loadRecommendedSkills = async () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Welcome Section with Glass Effect */}
