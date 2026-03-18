@@ -479,3 +479,44 @@ export const realtimeService = {
     return `${wsProtocol}://${baseUrl}/api/realtime/ws/${roomType}/${roomId}?token=${token}`;
   },
 };
+
+
+// ============================================
+// DASHBOARD SERVICE
+// ============================================
+export const dashboardService = {
+  getStats: async () => {
+    const response = await api.get('/api/dashboard/stats');
+    return response.data;
+  },
+
+  getRecentActivity: async (limit = 10) => {
+    const response = await api.get(`/api/dashboard/recent-activity?limit=${limit}`);
+    return response.data;
+  },
+};
+
+// ============================================
+// RATING SERVICE
+// ============================================
+export const ratingService = {
+  addRating: async (ratingData) => {
+    const response = await api.post('/api/ratings/add', ratingData);
+    return response.data;
+  },
+
+  getReceivedRatings: async (limit = 20) => {
+    const response = await api.get(`/api/ratings/received?limit=${limit}`);
+    return response.data;
+  },
+
+  getGivenRatings: async (limit = 20) => {
+    const response = await api.get(`/api/ratings/given?limit=${limit}`);
+    return response.data;
+  },
+
+  getUserRatings: async (userId) => {
+    const response = await api.get(`/api/ratings/user/${userId}`);
+    return response.data;
+  },
+};

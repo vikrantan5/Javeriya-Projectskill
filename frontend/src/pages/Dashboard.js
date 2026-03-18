@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { skillService, taskService, sessionService } from '../services/apiService';
+import { skillService, taskService, sessionService, dashboardService } from '../services/apiService';
 import axios from 'axios';
 import CalendarWidget from '../components/CalendarWidget';
 import { 
@@ -85,20 +85,21 @@ const Dashboard = () => {
   }, []);
 
   const loadDashboardData = async () => {
-    try {
-       // Load user stats from API
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.get(`${BACKEND_URL}/api/users/me/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setStats({
-         totalSessions: response.data.total_sessions || 0,
-          totalTasks: response.data.total_tasks_completed || 0,
-          totalSkills: user?.skills_offered?.length || 0,
-          averageRating: response.data.average_rating || 0,
-        });
+    try{
+      // Load user stats from NEW dashboard API
+      const dashboardStats = await dashboardService.getStats();
+      setStats({
+        totalSessions: dashboardStats.total_sessions || 0,
+        totalTasks: dashboardStats.tasks_completed || 0,
+        totalSkills: dashboardStats.skills_listed || 0,
+        averageRating: dashboardStats.average_rating || 0,
+      });
+      
+      // Set token balance if available
+      if (dashboardStats.tokens !== undefined) {
+        setTokenBalance(dashboardStats.tokens);
       }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error loading dashboard:', error);
