@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import RealtimeChat from '../components/RealtimeChat';
 import PaymentModal from '../components/PaymentModal';
 import FileUploadZone from '../components/FileUploadZone';
+import TaskApplicantsModal from '../components/TaskApplicantsModal';
 import { uploadMultipleFiles } from '../services/fileUploadService';
 import {
   Briefcase,
@@ -95,6 +96,8 @@ const TaskMarketplace = () => {
   const [chatTask, setChatTask] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentTask, setPaymentTask] = useState(null);
+    const [showApplicants, setShowApplicants] = useState(false);
+  const [applicantsTask, setApplicantsTask] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -155,6 +158,17 @@ const TaskMarketplace = () => {
   const handleOpenPayment = (task) => {
     setPaymentTask(task);
     setShowPayment(true);
+  };
+
+  const handleOpenApplicants = (task) => {
+    setApplicantsTask(task);
+    setShowApplicants(true);
+  };
+
+  const handleApplicantAssigned = () => {
+    showNotification('Task assigned successfully!', 'success');
+    loadTasks();
+    setShowApplicants(false);
   };
 
   const handlePaymentSuccess = () => {
@@ -1116,63 +1130,88 @@ attachment_urls: uploadedFileUrls,
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                 {selectedTask.status === 'open' && selectedTask.creator_id !== user?.id && (
+                                {/* Action Buttons */}
+                <div className="space-y-3">
+                  {/* View Applicants - Only for task creator when task is open */}
+                  {selectedTask.status === 'open' && selectedTask.creator_id === user?.id && (
                     <button
                       onClick={() => {
-                        handleAcceptTask(selectedTask.id);
-                        setShowTaskDetails(false);
+                        handleOpenApplicants(selectedTask);
                       }}
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                      data-testid="view-applicants-button"
                     >
-                      <CheckCircle className="w-5 h-5" />
-                      Accept Task
+                      <Users className="w-5 h-5" />
+                      View Applicants
                     </button>
                   )}
 
-   {selectedTask.status === 'accepted' && selectedTask.acceptor_id === user?.id && (
-                    <button
-                      onClick={() => {
-                        setSubmissionModal(true);
-                        setShowTaskDetails(false);
-                      }}
-                      className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2"
-                    >
-                      <Send className="w-5 h-5" />
-                      Submit Work
-                    </button>
-                  )}
+                  <div className="flex gap-3">
+                    {selectedTask.status === 'open' && selectedTask.creator_id !== user?.id && (
+                      <button
+                        onClick={() => {
+                          handleAcceptTask(selectedTask.id);
+                          setShowTaskDetails(false);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Accept Task
+                      </button>
+                    )}
 
-                   {selectedTask.status === 'accepted' && selectedTask.creator_id === user?.id && (
-                    <button
-                      onClick={() => {
-                        setPaymentModal(true);
-                      }}
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
-                      data-testid="open-escrow-payment-modal-button"
-                    >
-                      <Wallet className="w-5 h-5" />
-                      Pay Escrow
-                    </button>
-                  )}
+                    {selectedTask.status === 'accepted' && selectedTask.acceptor_id === user?.id && (
+                      <button
+                        onClick={() => {
+                          setSubmissionModal(true);
+                          setShowTaskDetails(false);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-5 h-5" />
+                        Submit Work
+                      </button>
+                    )}
 
-                  {selectedTask.status === 'submitted' && selectedTask.creator_id === user?.id && (
-                    <button
-                      onClick={() => handleCompleteTask(selectedTask.id)}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2"
-                    >
-                      <Award className="w-5 h-5" />
-                      Mark Complete
-                    </button>
-                  )}
+                    {selectedTask.status === 'accepted' && selectedTask.creator_id === user?.id && (
+                      <button
+                        onClick={() => {
+                          setPaymentModal(true);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                        data-testid="open-escrow-payment-modal-button"
+                      >
+                        <Wallet className="w-5 h-5" />
+                        Pay Escrow
+                      </button>
+                    )}
 
-                  {(selectedTask.status === 'open' || selectedTask.status === 'accepted') && (
-                    <button className="flex-1 border border-gray-200 dark:border-gray-700 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
-                      <MessageSquare className="w-5 h-5" />
-                      Message
-                    </button>
-                  )}
+                    {selectedTask.status === 'submitted' && selectedTask.creator_id === user?.id && (
+                      <button
+                        onClick={() => handleCompleteTask(selectedTask.id)}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2"
+                      >
+                        <Award className="w-5 h-5" />
+                        Mark Complete
+                      </button>
+                    )}
+
+                    {/* Chat Button - Show when task is accepted or submitted */}
+                    {(selectedTask.status === 'accepted' || selectedTask.status === 'submitted') && 
+                     (selectedTask.creator_id === user?.id || selectedTask.acceptor_id === user?.id) && (
+                      <button 
+                        onClick={() => {
+                          handleOpenChat(selectedTask);
+                          setShowTaskDetails(false);
+                        }}
+                        className="flex-1 border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 py-3 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors flex items-center justify-center gap-2"
+                        data-testid="open-task-chat-button"
+                      >
+                        <MessageSquare className="w-5 h-5" />
+                        Chat
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1314,9 +1353,9 @@ attachment_urls: uploadedFileUrls,
       </div>
 
 
-      {/* Chat Modal */}
+          {/* Chat Modal */}
       {showChat && chatTask && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl h-[600px]">
             <RealtimeChat
               roomType="task"
@@ -1326,6 +1365,14 @@ attachment_urls: uploadedFileUrls,
           </div>
         </div>
       )}
+
+      {/* Task Applicants Modal */}
+      <TaskApplicantsModal
+        task={applicantsTask}
+        isOpen={showApplicants}
+        onClose={() => setShowApplicants(false)}
+        onApplicantAssigned={handleApplicantAssigned}
+      />
 
       {/* Payment Modal */}
       <PaymentModal

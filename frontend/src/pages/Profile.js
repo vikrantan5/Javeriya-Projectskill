@@ -431,7 +431,7 @@ const handleSave = async () => {
   ];
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page" >
+    <div className={`min-h-screen  ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page" >
       <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
       
       {/* Settings Sidebar */}
@@ -581,8 +581,8 @@ const handleSave = async () => {
                 </span>
               </div>
               
-              <div className="flex items-center gap-4 text-white/80">
-                <span className="flex items-center gap-1">
+              <div className="flex items-center gap-4 text-gray-500">
+                <span className="flex items-center gap-1 ">
                   <User className="w-4 h-4" />
                   @{user?.username}
                 </span>
