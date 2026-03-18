@@ -5,6 +5,8 @@ import { taskService, paymentService } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 import RealtimeChat from '../components/RealtimeChat';
 import PaymentModal from '../components/PaymentModal';
+import FileUploadZone from '../components/FileUploadZone';
+import { uploadMultipleFiles } from '../services/fileUploadService';
 import {
   Briefcase,
   Plus,
@@ -76,6 +78,7 @@ const TaskMarketplace = () => {
     price: '',
     deadline: '',
     attachments: [],
+     attachmentFiles: [], // Store actual File objects
     requirements: '',
     estimated_hours: ''
   });
@@ -84,7 +87,8 @@ const TaskMarketplace = () => {
   const [submissionModal, setSubmissionModal] = useState(false);
   const [submissionData, setSubmissionData] = useState({
     message: '',
-    attachments: []
+    attachments: [],
+    attachmentFiles: [] // Store actual File objects
   });
 
     const [showChat, setShowChat] = useState(false);
@@ -162,6 +166,20 @@ const TaskMarketplace = () => {
     e.preventDefault();
     setLoading(true);
     try {
+        // Upload files first if any
+        let uploadedFileUrls = [];
+        if (newTask.attachmentFiles && newTask.attachmentFiles.length > 0) {
+          try {
+            const uploadResults = await uploadMultipleFiles(newTask.attachmentFiles, 'task-attachments', 'task-files');
+            uploadedFileUrls = uploadResults.map(result => result.url);
+            showNotification('Files uploaded successfully!', 'success');
+          } catch (uploadError) {
+            console.error('File upload error:', uploadError);
+            showNotification('Failed to upload files: ' + uploadError.message, 'error');
+            setLoading(false);
+            return; // Don't proceed if file upload fails
+          }
+        }
         // Prepare task data with proper formatting
       const taskDataToSubmit = {
         title: newTask.title,
@@ -170,7 +188,7 @@ const TaskMarketplace = () => {
         difficulty_level: newTask.difficulty_level || null,
         price: parseFloat(newTask.price),
         deadline: new Date(newTask.deadline).toISOString(),
-        attachment_urls: newTask.attachments || [],
+attachment_urls: uploadedFileUrls,
         requirements: newTask.requirements || null,
         estimated_hours: newTask.estimated_hours ? parseInt(newTask.estimated_hours) : null
       };
@@ -186,6 +204,7 @@ const TaskMarketplace = () => {
         price: '',
         deadline: '',
         attachments: [],
+        attachmentFiles: [],
         requirements: '',
         estimated_hours: ''
       });
@@ -211,7 +230,26 @@ const TaskMarketplace = () => {
  const handleSubmitTask = async () => {
   setLoading(true);
   try {
-    const result = await taskService.submitTask(selectedTask.id, submissionData);
+     // Upload files first if any
+    let uploadedFileUrls = [];
+    if (submissionData.attachmentFiles && submissionData.attachmentFiles.length > 0) {
+      try {
+        const uploadResults = await uploadMultipleFiles(submissionData.attachmentFiles, 'task-attachments', 'submission-files');
+        uploadedFileUrls = uploadResults.map(result => result.url);
+        showNotification('Files uploaded successfully!', 'success');
+      } catch (uploadError) {
+        console.error('File upload error:', uploadError);
+        showNotification('Failed to upload files: ' + uploadError.message, 'error');
+        setLoading(false);
+        return; // Don't proceed if file upload fails
+      }
+    }
+    
+    const result = await taskService.submitTask(selectedTask.id, {
+      message: submissionData.message,
+      attachments: uploadedFileUrls
+    });
+
 
     const plagiarismScore = result?.plagiarism_report?.similarity_score || 0;
 
@@ -225,7 +263,7 @@ const TaskMarketplace = () => {
     }
 
     setSubmissionModal(false);
-    setSubmissionData({ message: '', attachments: [] });
+   setSubmissionData({ message: '', attachments: [], attachmentFiles: [] });
     loadTasks();
 
   } catch (error) {
@@ -899,18 +937,12 @@ const TaskMarketplace = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Attachments
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center">
-                    <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Drag and drop files here, or{' '}
-                      <button className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                        browse
-                      </button>
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      Supported: PDF, DOC, ZIP (Max 10MB)
-                    </p>
-                  </div>
+                   <FileUploadZone
+                    onFilesSelected={(files) => setNewTask({ ...newTask, attachmentFiles: files })}
+                    maxFiles={5}
+                    existingFiles={newTask.attachmentFiles}
+                  />
+                
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -1139,15 +1171,11 @@ const TaskMarketplace = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Attachments
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center">
-                    <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Drag and drop files here, or{' '}
-                      <button className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                        browse
-                      </button>
-                    </p>
-                  </div>
+                   <FileUploadZone
+                    onFilesSelected={(files) => setSubmissionData({ ...submissionData, attachmentFiles: files })}
+                    maxFiles={5}
+                    existingFiles={submissionData.attachmentFiles}
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-4">

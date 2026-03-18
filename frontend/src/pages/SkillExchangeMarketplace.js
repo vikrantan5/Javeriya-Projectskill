@@ -61,6 +61,7 @@ const SkillExchangeMarketplace = () => {
 
   const showToast = (message, type = 'success') => {
     const safeMessage = typeof message === 'string' ? message : String(message ?? 'Unexpected error');
+     setToast({ show: true, message: safeMessage, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
@@ -274,7 +275,7 @@ const SkillExchangeMarketplace = () => {
                           </div>
 
                           <div className="flex gap-2">
-                            {activeTab === 'marketplace' && exchangeTask.status === 'open' && (
+  {activeTab === 'marketplace' && exchangeTask.status === 'open' && !isMyTask && (
                               <button
                                 onClick={() => handleAccept(exchangeTask.id)}
                                 className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap"
@@ -284,7 +285,7 @@ const SkillExchangeMarketplace = () => {
                               </button>
                             )}
                             
-                            {isMatched && activeTab === 'my' && (
+                             {isMatched && (
                               <>
                                 <button
                                   onClick={() => handleOpenChat(exchangeTask)}

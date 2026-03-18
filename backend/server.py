@@ -34,7 +34,7 @@ from app.api.routes import (
     auth, skills, sessions, tasks, reviews, payments, ai, admin, 
     notifications, users, reputation, mentors, roadmap, verification,
       realtime,
-    leaderboard, calendar, activities
+     leaderboard, calendar, activities, storage
 )
 
 
@@ -56,6 +56,7 @@ api_router.include_router(realtime.router)
 api_router.include_router(leaderboard.router)
 api_router.include_router(calendar.router)
 api_router.include_router(activities.router)
+api_router.include_router(storage.router)
 
 # Include API router in main app
 app.include_router(api_router)
