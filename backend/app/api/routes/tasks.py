@@ -50,6 +50,7 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
             new_task['difficulty_level'] = task_data.difficulty_level
         if task_data.attachment_urls or task_data.attachments:
             new_task['attachment_urls'] = task_data.attachment_urls or task_data.attachments or []
+        #   Remove requirements and estimated_hours as they don't exist in the database schema
         if task_data.requirements:
             new_task['requirements'] = task_data.requirements
         if task_data.estimated_hours is not None:
