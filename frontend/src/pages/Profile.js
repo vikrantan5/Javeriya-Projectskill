@@ -431,7 +431,7 @@ const handleSave = async () => {
   ];
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page">
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page" >
       <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
       
       {/* Settings Sidebar */}
@@ -507,7 +507,7 @@ const handleSave = async () => {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-8 ">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
           <div className="flex flex-col md:flex-row md:items-end gap-6">
@@ -602,7 +602,7 @@ const handleSave = async () => {
           <div className="flex gap-3 mt-4 md:mt-0">
             <button
               onClick={handleCopyProfileLink}
-              className="p-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="p-3 bg-blue-300 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
               title="Copy profile link"
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -610,7 +610,7 @@ const handleSave = async () => {
             
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 px-4 py-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="flex bg-blue-300 items-center gap-2 px-4 py-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
               data-testid="edit-profile-button"
             >
               {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
@@ -619,7 +619,7 @@ const handleSave = async () => {
 
             <button
               onClick={() => setShowSettings(true)}
-              className="p-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="p-3 bg-blue-300 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
             >
               <Settings className="w-5 h-5" />
             </button>

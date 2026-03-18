@@ -117,7 +117,7 @@ async def get_current_user_profile(current_user_id: str = Depends(get_current_us
         user_data = user_result.data[0]
         
         # Get user's skills from user_skills table
-        skills_result = db.table('user_skills').select('skill_name, proficiency_level, is_verified').eq('user_id', current_user_id).execute()
+        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', current_user_id).execute()
         user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
         user_data['skills_detailed'] = skills_result.data or []
         
