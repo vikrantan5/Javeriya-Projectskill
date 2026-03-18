@@ -164,6 +164,33 @@ const TaskMarketplace = () => {
 
     const handleCreateTask = async (e) => {
     e.preventDefault();
+
+     // Client-side validation
+    if (newTask.title.length < 10) {
+      showNotification('Task title must be at least 10 characters long', 'error');
+      return;
+    }
+    
+    if (newTask.title.length > 500) {
+      showNotification('Task title cannot exceed 500 characters', 'error');
+      return;
+    }
+    
+    if (!newTask.description || newTask.description.trim().length === 0) {
+      showNotification('Task description is required', 'error');
+      return;
+    }
+    
+    if (!newTask.price || parseFloat(newTask.price) <= 0) {
+      showNotification('Task price must be greater than 0', 'error');
+      return;
+    }
+    
+    if (!newTask.deadline) {
+      showNotification('Task deadline is required', 'error');
+      return;
+    }
+    
     setLoading(true);
     try {
         // Upload files first if any
@@ -182,8 +209,8 @@ const TaskMarketplace = () => {
         }
         // Prepare task data with proper formatting
       const taskDataToSubmit = {
-        title: newTask.title,
-        description: newTask.description,
+          title: newTask.title.trim(),
+        description: newTask.description.trim(),
         subject: newTask.subject || null,
         difficulty_level: newTask.difficulty_level || null,
         price: parseFloat(newTask.price),
@@ -192,7 +219,8 @@ attachment_urls: uploadedFileUrls,
         requirements: newTask.requirements || null,
         estimated_hours: newTask.estimated_hours ? parseInt(newTask.estimated_hours) : null
       };
-      
+        console.log('Submitting task data:', taskDataToSubmit);
+
       await taskService.createTask(taskDataToSubmit);
       showNotification('Task created successfully!', 'success');
       setShowCreateTask(false);
@@ -211,7 +239,17 @@ attachment_urls: uploadedFileUrls,
       loadTasks();
     } catch (error) {
       console.error('Task creation error:', error.response?.data);
-      showNotification('Failed to create task: ' + (error.response?.data?.detail || error.message), 'error');
+      const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
+      
+      // Parse validation errors if present
+      if (error.response?.data?.detail && Array.isArray(error.response.data.detail)) {
+        const validationErrors = error.response.data.detail.map(err => 
+          `${err.loc?.join('.')}: ${err.msg}`
+        ).join(', ');
+        showNotification('Validation error: ' + validationErrors, 'error');
+      } else {
+        showNotification('Failed to create task: ' + errorMessage, 'error');
+      }
     }
     setLoading(false);
   };
@@ -811,19 +849,26 @@ attachment_urls: uploadedFileUrls,
 
               {/* Modal Body */}
               <form onSubmit={handleCreateTask} className="p-6 space-y-4">
-                <div>
+                               <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Task Title *
+                    Task Title * <span className="text-xs text-gray-500">(min 10 characters)</span>
                   </label>
                   <input
                     type="text"
                     required
+                    minLength="10"
+                    maxLength="500"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="e.g., Help with Python Assignment"
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     data-testid="task-title-input"
                   />
+                  {newTask.title && newTask.title.length < 10 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Title must be at least 10 characters ({newTask.title.length}/10)
+                    </p>
+                  )}
                 </div>
 
                 <div>

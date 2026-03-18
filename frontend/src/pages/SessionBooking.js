@@ -494,7 +494,7 @@ const SessionBooking = () => {
                           Join Meeting
                         </a>
                       )}
-                       {!selectedSession.meeting_link && selectedSession.role === 'mentor' && (
+                       {selectedSession && !selectedSession.meeting_link && selectedSession.role === 'mentor' && (
                     <button
                       onClick={() => {
                         setShowDetails(false);
@@ -662,7 +662,7 @@ const SessionBooking = () => {
                     </a>
                   )}
 
-                     {!selectedSession.meeting_link && selectedSession.role === 'mentor' && (
+                     {selectedSession && !selectedSession.meeting_link && selectedSession.role === 'mentor' && (
                     <button
                       onClick={() => {
                         setShowDetails(false);

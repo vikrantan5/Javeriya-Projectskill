@@ -30,6 +30,8 @@ def utc_now_iso() -> str:
 async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_current_user)):
     """Create a new task"""
     try:
+        # Debug logging
+        logger.info(f"Received task creation request: {task_data.model_dump()}")
         db = get_db()
         
             # Create task (use only safe core fields; add optional fields conditionally)
