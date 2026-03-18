@@ -145,15 +145,15 @@ async def get_user_by_id(user_id: UUID):
         user_data = user_result.data[0]
         
         # Get user's skills
-        skills_result = db.table('user_skills').select('skill_name, proficiency_level, is_verified').eq('user_id', current_user_id).execute()
+        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
         user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
         
         # Get upcoming sessions count
-        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', current_user_id).eq('status', 'scheduled').execute()
+        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
         user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
         
         # Get connections/followers count
-        connections = db.table('connections').select('id').eq('user_id', current_user_id).eq('status', 'accepted').execute()
+        connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
         user_data['connections_count'] = len(connections.data) if connections.data else 0
         
         return user_data

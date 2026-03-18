@@ -68,8 +68,12 @@ const Register = () => {
     if (!formData.password) {
       setPasswordStrength(0);
       setPasswordError('');
+      setPasswordByteLength(0);
       return;
     }
+    // Calculate byte length
+    const byteLen = new TextEncoder().encode(formData.password).length;
+    setPasswordByteLength(byteLen);
 
     if (formData.password.length < 8) {
       setPasswordError('Password must be at least 8 characters long');
