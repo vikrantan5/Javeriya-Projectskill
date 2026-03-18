@@ -65,9 +65,25 @@ def decode_access_token(token: str) -> TokenData:
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """Get current authenticated user ID from token"""
-    token = credentials.credentials
-    token_data = decode_access_token(token)
-    return token_data.user_id
+    try:
+        token = credentials.credentials
+        token_data = decode_access_token(token)
+        if not token_data.user_id:
+            logger.error("Token decoded but user_id is None")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        logger.debug(f"Authenticated user: {token_data.user_id}")
+        return token_data.user_id
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 async def get_current_admin_user(current_user_id: str = Depends(get_current_user)) -> str:
     """Get current admin user"""
