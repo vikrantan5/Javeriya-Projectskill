@@ -187,6 +187,11 @@ acceptTask: async (taskId, message = '') => {
     return response.data;
   },
 
+   getTaskSubmissions: async (taskId) => {
+    const response = await api.get(`/api/tasks/${taskId}/submissions`);
+    return response.data;
+  },
+
   approveSubmission: async (taskId, reviewNotes) => {
     const response = await api.post(`/api/tasks/${taskId}/approve`, { review_notes: reviewNotes });
     return response.data;

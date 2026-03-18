@@ -635,6 +635,62 @@ async def assign_task(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+
+@router.get("/{task_id}/submissions")
+async def get_task_submissions(task_id: str, current_user_id: str = Depends(get_current_user)):
+    """Get all submissions for a task - only for task creator"""
+    try:
+        db = get_db()
+        
+        # Verify user is the task creator
+        task_result = db.table('tasks').select('*').eq('id', task_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        task = task_result.data[0]
+        
+        # Allow creator and acceptor to view submissions
+        if task['creator_id'] != current_user_id and task.get('acceptor_id') != current_user_id and task.get('assigned_user_id') != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view submissions for this task"
+            )
+        
+        # Get submissions
+        submissions_result = db.table('task_submissions').select('*').eq('task_id', task_id).order('submitted_at', desc=True).execute()
+        
+        if not submissions_result.data:
+            return []
+        
+        # Get submitter details
+        submitter_ids = list(set([sub['submitter_id'] for sub in submissions_result.data]))
+        users_result = db.table('users').select('id, username, full_name, profile_photo').in_('id', submitter_ids).execute()
+        users_dict = {user['id']: user for user in (users_result.data or [])}
+        
+        # Combine submission data with user details
+        submissions_with_users = []
+        for submission in submissions_result.data:
+            submitter = users_dict.get(submission['submitter_id'])
+            submissions_with_users.append({
+                **submission,
+                'submitter': submitter
+            })
+        
+        return submissions_with_users
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting task submissions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 @router.post("/{task_id}/submit")
 async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, current_user_id: str = Depends(get_current_user)):
     """Submit work for a task"""

@@ -92,6 +92,9 @@ const TaskMarketplace = () => {
     attachmentFiles: [] // Store actual File objects
   });
 
+   const [viewSubmissionsModal, setViewSubmissionsModal] = useState(false);
+  const [taskSubmissions, setTaskSubmissions] = useState([]);
+
     const [showChat, setShowChat] = useState(false);
   const [chatTask, setChatTask] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
@@ -335,6 +338,17 @@ attachment_urls: uploadedFileUrls,
       loadTasks();
     } catch (error) {
        showNotification('Failed to approve task: ' + (error.response?.data?.detail || error.message), 'error');
+    }
+  };
+
+    const handleViewSubmissions = async (task) => {
+    try {
+      setSelectedTask(task);
+      const submissions = await taskService.getTaskSubmissions(task.id);
+      setTaskSubmissions(submissions);
+      setViewSubmissionsModal(true);
+    } catch (error) {
+      showNotification('Failed to load submissions: ' + (error.response?.data?.detail || error.message), 'error');
     }
   };
 
@@ -1187,13 +1201,26 @@ attachment_urls: uploadedFileUrls,
                     )}
 
                     {selectedTask.status === 'submitted' && selectedTask.creator_id === user?.id && (
+                       <>
+                        <button
+                          onClick={() => {
+                            handleViewSubmissions(selectedTask);
+                            setShowTaskDetails(false);
+                          }}
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2"
+                          data-testid="view-submissions-button"
+                        >
+                          <Eye className="w-5 h-5" />
+                          View Submission
+                        </button>
                       <button
                         onClick={() => handleCompleteTask(selectedTask.id)}
                         className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2"
                       >
                         <Award className="w-5 h-5" />
-                        Mark Complete
+                            Approve & Complete
                       </button>
+                        </>
                     )}
 
                     {/* Chat Button - Show when task is accepted or submitted */}
@@ -1287,6 +1314,129 @@ attachment_urls: uploadedFileUrls,
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+         {/* View Submissions Modal */}
+        {viewSubmissionsModal && selectedTask && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setViewSubmissionsModal(false)}>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="relative h-24 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-t-2xl p-6">
+                <div className="absolute inset-0 bg-black/20 rounded-t-2xl"></div>
+                <div className="relative flex justify-between items-start">
+                  <h2 className="text-2xl font-bold text-white">Task Submissions</h2>
+                  <button
+                    onClick={() => setViewSubmissionsModal(false)}
+                    className="p-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{selectedTask.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Task ID: #{selectedTask.id?.slice(0, 8)}</p>
+                </div>
+
+                {taskSubmissions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                      <FileText className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400">No submissions yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {taskSubmissions.map((submission, index) => (
+                      <div key={submission.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-gray-50 dark:bg-gray-700/50">
+                        {/* Submitter Info */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center text-white font-bold">
+                            {submission.submitter?.full_name?.charAt(0) || submission.submitter?.username?.charAt(0) || 'U'}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {submission.submitter?.full_name || submission.submitter?.username || 'Anonymous'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Submitted on {new Date(submission.submitted_at).toLocaleString()}
+                            </p>
+                          </div>
+                          {submission.is_approved && (
+                            <span className="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-medium">
+                              ✓ Approved
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Submission Text */}
+                        {submission.submission_text && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message:</h4>
+                            <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-white dark:bg-gray-800 p-4 rounded-lg">
+                              {submission.submission_text}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Submission Files */}
+                        {submission.submission_files && submission.submission_files.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachments:</h4>
+                            <div className="space-y-2">
+                              {submission.submission_files.map((fileUrl, fileIndex) => (
+                                <a
+                                  key={fileIndex}
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group"
+                                >
+                                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    Attachment {fileIndex + 1}
+                                  </span>
+                                  <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Review Notes */}
+                        {submission.review_notes && (
+                          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Review Notes:</h4>
+                            <p className="text-sm text-blue-700 dark:text-blue-400">{submission.review_notes}</p>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        {!submission.is_approved && selectedTask.creator_id === user?.id && (
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <button
+                              onClick={() => {
+                                handleCompleteTask(selectedTask.id);
+                                setViewSubmissionsModal(false);
+                              }}
+                              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                              Approve & Complete Task
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

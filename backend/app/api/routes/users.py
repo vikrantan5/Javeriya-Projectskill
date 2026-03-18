@@ -60,7 +60,9 @@ async def get_user_stats(current_user_id: str = Depends(get_current_user)):
         total_sessions = len(mentor_sessions.data or []) + len(learner_sessions.data or [])
         
         # Get total tasks completed
-        tasks_completed = db.table('task_board').select('id').eq('acceptor_id', current_user_id).eq('status', 'completed').execute()
+        tasks_completed = db.table('tasks').select('id').or_(
+            f'assigned_user_id.eq.{current_user_id},acceptor_id.eq.{current_user_id}'
+        ).eq('status', 'completed').execute()
         total_tasks_completed = len(tasks_completed.data or [])
         
         # Get average rating (from user table)
