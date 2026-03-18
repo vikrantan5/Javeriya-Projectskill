@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, WebSocket, WebSocketDisconnect, Query
 from app.models.schemas import (
     SessionRequestCreate,
     SessionRequestResponse,
@@ -7,15 +7,52 @@ from app.models.schemas import (
     SessionUpdate,
     MeetingLinkGenerateRequest,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, decode_access_token
 from app.database import get_db
-from typing import List
+from typing import List, Dict
+from datetime import datetime, timezone
 import logging
 import uuid
+import json
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
+
+# WebSocket Connection Manager for Session Chat
+class SessionChatManager:
+    def __init__(self):
+        self.active_connections: Dict[str, Dict[str, WebSocket]] = {}
+
+    async def connect(self, session_id: str, user_id: str, websocket: WebSocket):
+        await websocket.accept()
+        if session_id not in self.active_connections:
+            self.active_connections[session_id] = {}
+        self.active_connections[session_id][user_id] = websocket
+        logger.info(f"User {user_id} connected to session {session_id}")
+
+    def disconnect(self, session_id: str, user_id: str):
+        if session_id in self.active_connections:
+            if user_id in self.active_connections[session_id]:
+                del self.active_connections[session_id][user_id]
+            if not self.active_connections[session_id]:
+                del self.active_connections[session_id]
+        logger.info(f"User {user_id} disconnected from session {session_id}")
+
+    async def broadcast(self, session_id: str, message: dict):
+        if session_id in self.active_connections:
+            stale_users = []
+            for user_id, connection in self.active_connections[session_id].items():
+                try:
+                    await connection.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error broadcasting to user {user_id}: {str(e)}")
+                    stale_users.append(user_id)
+            
+            for user_id in stale_users:
+                self.disconnect(session_id, user_id)
+
+session_chat_manager = SessionChatManager()
 
 from pydantic import BaseModel
 from datetime import datetime
@@ -482,3 +519,145 @@ async def update_session(session_id: str, update_data: SessionUpdate, current_us
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+
+# WebSocket endpoint for skill exchange session chat
+@router.websocket("/ws/{session_id}")
+async def session_chat_websocket(websocket: WebSocket, session_id: str, token: str = Query(...)):
+    """WebSocket endpoint for skill exchange session chat"""
+    try:
+        # Verify token and get user_id
+        token_data = decode_access_token(token)
+        user_id = token_data.user_id
+        if not user_id:
+            await websocket.close(code=1008, reason="Invalid token")
+            return
+    except Exception as e:
+        logger.error(f"Token validation error: {str(e)}")
+        await websocket.close(code=1008, reason="Authentication failed")
+        return
+
+    try:
+        db = get_db()
+        
+        # Verify user is part of this session
+        session_result = db.table('skill_exchange_sessions').select('*').eq('id', session_id).execute()
+        
+        if not session_result.data:
+            await websocket.close(code=1003, reason="Session not found")
+            return
+        
+        session = session_result.data[0]
+        
+        # Check if user is participant
+        if session['participant1_id'] != user_id and session['participant2_id'] != user_id:
+            await websocket.close(code=1003, reason="Not authorized")
+            return
+        
+        # Connect to session
+        await session_chat_manager.connect(session_id, user_id, websocket)
+        
+        # Send join event
+        join_message = {
+            "id": str(uuid.uuid4()),
+            "session_id": session_id,
+            "sender_id": user_id,
+            "message": "joined the chat",
+            "message_type": "system",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await session_chat_manager.broadcast(session_id, join_message)
+        
+        # Listen for messages
+        while True:
+            raw_data = await websocket.receive_text()
+            
+            try:
+                payload = json.loads(raw_data)
+            except json.JSONDecodeError:
+                payload = {"content": raw_data}
+            
+            content = str(payload.get("content", "")).strip()
+            if not content:
+                await websocket.send_json({"event": "error", "detail": "Message cannot be empty"})
+                continue
+            
+            # Create message record
+            message_data = {
+                "id": str(uuid.uuid4()),
+                "session_id": session_id,
+                "sender_id": user_id,
+                "message": content,
+                "message_type": payload.get("message_type", "text"),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            # Store in database
+            try:
+                db.table('session_messages').insert(message_data).execute()
+            except Exception as e:
+                logger.warning(f"Failed to persist message: {str(e)}")
+            
+            # Broadcast to all participants
+            await session_chat_manager.broadcast(session_id, message_data)
+    
+    except WebSocketDisconnect:
+        session_chat_manager.disconnect(session_id, user_id)
+        
+        # Send leave event
+        leave_message = {
+            "id": str(uuid.uuid4()),
+            "session_id": session_id,
+            "sender_id": user_id,
+            "message": "left the chat",
+            "message_type": "system",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await session_chat_manager.broadcast(session_id, leave_message)
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}")
+        session_chat_manager.disconnect(session_id, user_id)
+
+@router.get("/history/{session_id}")
+async def get_session_chat_history(
+    session_id: str,
+    limit: int = 100,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Get chat history for a skill exchange session"""
+    try:
+        db = get_db()
+        
+        # Verify user is part of session
+        session_result = db.table('skill_exchange_sessions').select('*').eq('id', session_id).execute()
+        
+        if not session_result.data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session = session_result.data[0]
+        
+        if session['participant1_id'] != current_user_id and session['participant2_id'] != current_user_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        
+        # Get messages
+        messages_result = db.table('session_messages').select('*').eq('session_id', session_id).order('created_at', desc=False).limit(min(limit, 200)).execute()
+        
+        return {
+            "session_id": session_id,
+            "messages": messages_result.data or []
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching chat history: {str(e)}")
+        
+        # If table doesn't exist, return empty
+        if "does not exist" in str(e).lower():
+            return {
+                "session_id": session_id,
+                "messages": [],
+                "note": "Run session_messages_migration.sql to enable chat persistence"
+            }
+        
+        raise HTTPException(status_code=500, detail=str(e))

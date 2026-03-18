@@ -115,6 +115,17 @@ export const sessionService = {
     const response = await api.get('/api/sessions/skill-exchange-sessions');
     return response.data;
   },
+  getSessionChatHistory: async (sessionId) => {
+    const response = await api.get(`/api/sessions/history/${sessionId}`);
+    return response.data;
+  },
+
+  buildSessionWebSocketUrl: (sessionId, token) => {
+    const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss' : 'ws';
+    const baseUrl = API_BASE_URL.replace(/^https?:\/\//, '');
+    return `${wsProtocol}://${baseUrl}/api/sessions/ws/${sessionId}?token=${token}`;
+  },
 };
 
 // ============================================

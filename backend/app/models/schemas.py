@@ -199,7 +199,7 @@ class TaskUpdate(BaseModel):
     acceptor_id: Optional[UUID] = None
 
 class TaskSubmissionCreate(BaseModel):
-    task_id: UUID
+   
     submission_text: Optional[str] = None
     submission_files: Optional[List[str]] = None
 

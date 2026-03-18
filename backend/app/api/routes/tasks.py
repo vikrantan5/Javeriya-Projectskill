@@ -637,27 +637,35 @@ async def assign_task(
         )
 @router.post("/{task_id}/submit")
 async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, current_user_id: str = Depends(get_current_user)):
-    submission_text = submission_data.submission_text
-
     """Submit work for a task"""
+    submission_text = submission_data.submission_text
+    
     try:
         db = get_db()
         
         # Verify task is accepted by current user
-        task_result = db.table('tasks').select('*').eq('id', task_id).eq('acceptor_id', current_user_id).execute()
+        task_result = db.table('tasks').select('*').eq('id', task_id).execute()
         
         if not task_result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Task not found or not accepted by you"
+                detail="Task not found"
             )
         
         task = task_result.data[0]
         
-        if task['status'] not in ['accepted']:
+        # Check if current user is the acceptor
+        if task.get('acceptor_id') != current_user_id and task.get('assigned_user_id') != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not assigned to this task"
+            )
+        
+        # Allow submission if task is 'accepted' or 'in_progress'
+        if task['status'] not in ['accepted', 'in_progress']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Task cannot be submitted in current status"
+                detail=f"Task cannot be submitted in current status: {task['status']}. Only 'accepted' or 'in_progress' tasks can be submitted."
             )
         
         # Create submission
