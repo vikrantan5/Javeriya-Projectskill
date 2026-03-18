@@ -7,10 +7,15 @@ from uuid import UUID
 import logging
 import os
 from datetime import datetime
+from app.config import settings
+from supabase import create_client
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+# Initialize Supabase client
+supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 @router.get("/token-balance")
 async def get_token_balance(current_user_id: str = Depends(get_current_user)):
@@ -374,6 +379,428 @@ async def update_user_profile(update_data: UserUpdate, current_user_id: str = De
         raise
     except Exception as e:
         logger.error(f"Error updating user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+
+@router.post("/upload-profile-photo")
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    current_user_id: str = Depends(get_current_user)
+):
+    """Upload profile photo to Supabase storage"""
+    try:
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JPEG, PNG, and WEBP are allowed."
+            )
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Generate unique filename
+        file_extension = file.filename.split('.')[-1]
+        file_name = f"profile_{current_user_id}_{datetime.now().timestamp()}.{file_extension}"
+        file_path = f"profile-photos/{file_name}"
+        
+        # Upload to Supabase storage
+        storage_response = supabase.storage.from_('profile-photos').upload(
+            file_path,
+            file_content,
+            {"content-type": file.content_type}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_('profile-photos').get_public_url(file_path)
+        
+        # Update user profile with photo URL
+        db = get_db()
+        db.table('users').update({'profile_photo': public_url}).eq('id', current_user_id).execute()
+        
+        return {
+            "message": "Profile photo uploaded successfully",
+            "photo_url": public_url
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading profile photo: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/upload-background-photo")
+async def upload_background_photo(
+    file: UploadFile = File(...),
+    current_user_id: str = Depends(get_current_user)
+):
+    """Upload background photo to Supabase storage"""
+    try:
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file type. Only JPEG, PNG, and WEBP are allowed."
+            )
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Generate unique filename
+        file_extension = file.filename.split('.')[-1]
+        file_name = f"background_{current_user_id}_{datetime.now().timestamp()}.{file_extension}"
+        file_path = f"background-photos/{file_name}"
+        
+        # Upload to Supabase storage
+        storage_response = supabase.storage.from_('background-photos').upload(
+            file_path,
+            file_content,
+            {"content-type": file.content_type}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_('background-photos').get_public_url(file_path)
+        
+        # Update user profile with background photo URL
+        db = get_db()
+        db.table('users').update({'background_photo': public_url}).eq('id', current_user_id).execute()
+        
+        return {
+            "message": "Background photo uploaded successfully",
+            "photo_url": public_url
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading background photo: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/browse")
+async def browse_users(
+    limit: int = 20,
+    offset: int = 0,
+    search: str = None,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Browse all users on the platform"""
+    try:
+        db = get_db()
+        
+        # Build query
+        query = db.table('users').select('id, username, full_name, profile_photo, bio, average_rating, total_sessions')
+        
+        # Exclude current user
+        query = query.neq('id', current_user_id)
+        
+        # Add search if provided
+        if search:
+            query = query.or_(f'username.ilike.%{search}%,full_name.ilike.%{search}%')
+        
+        # Execute query with pagination
+        result = query.range(offset, offset + limit - 1).execute()
+        
+        # Get skills for each user
+        users_with_skills = []
+        for user in result.data:
+            skills_result = db.table('user_skills').select('skill_name').eq('user_id', user['id']).limit(3).execute()
+            user['top_skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
+            
+            # Check connection status
+            connection_result = db.table('connections').select('status').or_(
+                f'and(user_id.eq.{current_user_id},connected_user_id.eq.{user["id"]}),and(user_id.eq.{user["id"]},connected_user_id.eq.{current_user_id})'
+            ).execute()
+            
+            user['connection_status'] = connection_result.data[0]['status'] if connection_result.data else None
+            users_with_skills.append(user)
+        
+        return {"users": users_with_skills}
+    
+    except Exception as e:
+        logger.error(f"Error browsing users: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/connections/send-request/{user_id}")
+async def send_connection_request(
+    user_id: str,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Send a connection request to another user"""
+    try:
+        db = get_db()
+        
+        # Check if connection already exists
+        existing = db.table('connections').select('*').or_(
+            f'and(user_id.eq.{current_user_id},connected_user_id.eq.{user_id}),and(user_id.eq.{user_id},connected_user_id.eq.{current_user_id})'
+        ).execute()
+        
+        if existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Connection request already exists"
+            )
+        
+        # Create connection request
+        connection_data = {
+            'user_id': current_user_id,
+            'connected_user_id': user_id,
+            'status': 'pending'
+        }
+        
+        result = db.table('connections').insert(connection_data).execute()
+        
+        # Create notification for receiver
+        db.table('notifications').insert({
+            'user_id': user_id,
+            'title': 'New Connection Request',
+            'message': 'Someone wants to connect with you!',
+            'notification_type': 'connection_request',
+            'reference_id': result.data[0]['id'],
+            'reference_type': 'connection'
+        }).execute()
+        
+        return {
+            "message": "Connection request sent successfully",
+            "connection": result.data[0]
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending connection request: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/connections/respond/{connection_id}")
+async def respond_to_connection_request(
+    connection_id: str,
+    accept: bool,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Accept or reject a connection request"""
+    try:
+        db = get_db()
+        
+        # Get connection request
+        connection_result = db.table('connections').select('*').eq('id', connection_id).eq('connected_user_id', current_user_id).execute()
+        
+        if not connection_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Connection request not found"
+            )
+        
+        connection = connection_result.data[0]
+        
+        # Update connection status
+        new_status = 'accepted' if accept else 'rejected'
+        db.table('connections').update({'status': new_status}).eq('id', connection_id).execute()
+        
+        # Notify sender
+        message = 'Your connection request was accepted!' if accept else 'Your connection request was declined.'
+        db.table('notifications').insert({
+            'user_id': connection['user_id'],
+            'title': 'Connection Request Update',
+            'message': message,
+            'notification_type': 'connection_response',
+            'reference_id': connection_id,
+            'reference_type': 'connection'
+        }).execute()
+        
+        return {
+            "message": f"Connection request {'accepted' if accept else 'rejected'}",
+            "status": new_status
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error responding to connection request: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/connection-requests")
+async def get_connection_requests(current_user_id: str = Depends(get_current_user)):
+    """Get pending connection requests for current user"""
+    try:
+        db = get_db()
+        
+        # Get pending requests where user is receiver
+        requests_result = db.table('connections').select('*').eq('connected_user_id', current_user_id).eq('status', 'pending').execute()
+        
+        if not requests_result.data:
+            return {"requests": []}
+        
+        # Get sender details
+        sender_ids = [req['user_id'] for req in requests_result.data]
+        users_result = db.table('users').select('id, username, full_name, profile_photo, bio').in_('id', sender_ids).execute()
+        users_dict = {user['id']: user for user in users_result.data}
+        
+        # Combine data
+        requests_with_users = []
+        for req in requests_result.data:
+            sender = users_dict.get(req['user_id'])
+            if sender:
+                requests_with_users.append({
+                    'connection_id': req['id'],
+                    'sender': sender,
+                    'created_at': req['created_at']
+                })
+        
+        return {"requests": requests_with_users}
+    
+    except Exception as e:
+        logger.error(f"Error getting connection requests: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/my-activities")
+async def get_my_activities(
+    limit: int = 20,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Get user's recent activities"""
+    try:
+        db = get_db()
+        activities = []
+        
+        # Get recent sessions
+        sessions = db.table('learning_sessions').select('*, mentor:users!mentor_id(username, full_name), learner:users!learner_id(username, full_name)').or_(
+            f'mentor_id.eq.{current_user_id},learner_id.eq.{current_user_id}'
+        ).order('created_at', desc=True).limit(10).execute()
+        
+        for session in (sessions.data or []):
+            other_user = session.get('learner') if session.get('mentor_id') == current_user_id else session.get('mentor')
+            activities.append({
+                'icon': 'BookOpen',
+                'title': f"Learning Session: {session.get('skill_name')}",
+                'user': other_user.get('full_name') or other_user.get('username') if other_user else 'Unknown',
+                'time': session.get('created_at')
+            })
+        
+        # Get recent tasks
+        tasks = db.table('tasks').select('*, creator:users!creator_id(username, full_name)').or_(
+            f'creator_id.eq.{current_user_id},acceptor_id.eq.{current_user_id}'
+        ).order('created_at', desc=True).limit(10).execute()
+        
+        for task in (tasks.data or []):
+            creator = task.get('creator')
+            activities.append({
+                'icon': 'Briefcase',
+                'title': f"Task: {task.get('title')}",
+                'user': creator.get('full_name') or creator.get('username') if creator else 'Unknown',
+                'time': task.get('created_at')
+            })
+        
+        # Sort by time
+        activities.sort(key=lambda x: x.get('time') or '', reverse=True)
+        
+        return {"activities": activities[:limit]}
+    
+    except Exception as e:
+        logger.error(f"Error getting activities: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/achievements")
+async def get_achievements(current_user_id: str = Depends(get_current_user)):
+    """Get user achievements"""
+    try:
+        db = get_db()
+        achievements = []
+        
+        # Get user stats
+        user_result = db.table('users').select('*').eq('id', current_user_id).execute()
+        if not user_result.data:
+            return {"achievements": []}
+        
+        user = user_result.data[0]
+        
+        # Get sessions count
+        sessions_result = db.table('learning_sessions').select('id').eq('mentor_id', current_user_id).eq('status', 'completed').execute()
+        sessions_count = len(sessions_result.data or [])
+        
+        # Get tasks count
+        tasks_result = db.table('tasks').select('id').eq('acceptor_id', current_user_id).eq('status', 'completed').execute()
+        tasks_count = len(tasks_result.data or [])
+        
+        # Get verified skills count
+        verified_skills = db.table('user_skills').select('id').eq('user_id', current_user_id).eq('is_verified', True).execute()
+        verified_count = len(verified_skills.data or [])
+        
+        # Generate achievements
+        if sessions_count >= 1:
+            achievements.append({
+                'icon': 'Trophy',
+                'title': 'First Session',
+                'description': 'Completed your first learning session',
+                'color': 'blue',
+                'date': 'Recently'
+            })
+        
+        if sessions_count >= 10:
+            achievements.append({
+                'icon': 'Medal',
+                'title': 'Session Expert',
+                'description': 'Completed 10+ learning sessions',
+                'color': 'purple',
+                'date': 'Recently'
+            })
+        
+        if tasks_count >= 5:
+            achievements.append({
+                'icon': 'Target',
+                'title': 'Task Master',
+                'description': 'Completed 5+ tasks',
+                'color': 'green',
+                'date': 'Recently'
+            })
+        
+        if verified_count >= 3:
+            achievements.append({
+                'icon': 'Crown',
+                'title': 'Verified Expert',
+                'description': 'Verified 3+ skills',
+                'color': 'yellow',
+                'date': 'Recently'
+            })
+        
+        if user.get('average_rating', 0) >= 4.5:
+            achievements.append({
+                'icon': 'Rocket',
+                'title': 'Top Rated',
+                'description': 'Maintained 4.5+ average rating',
+                'color': 'indigo',
+                'date': 'Recently'
+            })
+        
+        return {"achievements": achievements}
+    
+    except Exception as e:
+        logger.error(f"Error getting achievements: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

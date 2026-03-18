@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import BrowseUsersModal from '../components/BrowseUsersModal';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import {
@@ -106,6 +107,8 @@ full_name: '',
   const [loadingTokens, setLoadingTokens] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [resumeResult, setResumeResult] = useState(null);
+    const [showBrowseUsers, setShowBrowseUsers] = useState(false);
+  const [connectionRequests, setConnectionRequests] = useState([]);
 
 const handleSave = async () => {
     try {
@@ -185,6 +188,7 @@ const handleSave = async () => {
       loadUpcomingSessions();
       loadConnections();
       loadProfileCompletion();
+      loadConnectionRequests();
     }
   }, [user]);
 
@@ -346,6 +350,35 @@ const handleSave = async () => {
     }
   };
 
+  const loadConnectionRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/users/connection-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConnectionRequests(response.data.requests || []);
+    } catch (error) {
+      console.error('Error loading connection requests:', error);
+    }
+  };
+
+  const handleConnectionResponse = async (connectionId, accept) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${BACKEND_URL}/api/users/connections/respond/${connectionId}`, 
+        { accept },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      alert(`Connection request ${accept ? 'accepted' : 'rejected'}!`);
+      loadConnectionRequests();
+      loadConnections();
+    } catch (error) {
+      console.error('Error responding to connection request:', error);
+      alert('Failed to respond to connection request');
+    }
+  };
+
   const handleResumeUpload = async (file) => {
     setUploadingResume(true);
     setResumeResult(null);
@@ -364,6 +397,9 @@ const handleSave = async () => {
       
       setResumeResult(response.data);
       alert(`Resume uploaded! ${response.data.auto_add_result?.added_count || 0} skills added to your profile.`);
+
+       // Reload profile data to refresh skills
+      await loadProfileData();
     } catch (error) {
       console.error('Error uploading resume:', error);
       alert('Failed to upload resume: ' + (error.response?.data?.detail || error.message));
@@ -1104,11 +1140,59 @@ const handleSave = async () => {
                 </div>
               </div>
             </div>
+            
+            {/* Connection Requests */}
+            {connectionRequests.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Connection Requests</h3>
+                <div className="space-y-3">
+                  {connectionRequests.slice(0, 3).map((request) => (
+                    <div key={request.connection_id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                          {request.sender.profile_photo ? (
+                            <img src={request.sender.profile_photo} alt={request.sender.username} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            request.sender.username?.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                            {request.sender.full_name || request.sender.username}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">@{request.sender.username}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConnectionResponse(request.connection_id, true)}
+                          className="flex-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleConnectionResponse(request.connection_id, false)}
+                          className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
                        {/* Connections */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connections</h3>
-                <span className="text-sm text-indigo-600 dark:text-indigo-400">View all</span>
+                <button
+                  onClick={() => setShowBrowseUsers(true)}
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+                >
+                  Browse Users
+                </button>
               </div>
               
               <div className="space-y-3">
@@ -1117,7 +1201,11 @@ const handleSave = async () => {
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {connection.username?.charAt(0).toUpperCase()}
+                          {connection.profile_photo ? (
+                            <img src={connection.profile_photo} alt={connection.username} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            connection.username?.charAt(0).toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">{connection.full_name || connection.username}</p>
@@ -1130,7 +1218,15 @@ const handleSave = async () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No connections yet</p>
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No connections yet</p>
+                    <button
+                      onClick={() => setShowBrowseUsers(true)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      Find Connections
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1142,8 +1238,24 @@ const handleSave = async () => {
                 {upcomingSessions.length > 0 ? (
                   upcomingSessions.slice(0, 2).map((session, index) => (
                     <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <p className="font-medium text-gray-900 dark:text-white">{session.title}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        {session.other_user?.profile_photo && (
+                          <img 
+                            src={session.other_user.profile_photo} 
+                            alt={session.other_user.username} 
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 dark:text-white">{session.title}</p>
+                          {session.other_user && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              with {session.other_user.full_name || session.other_user.username}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                         {session.scheduled_at ? new Date(session.scheduled_at).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric', 
@@ -1151,7 +1263,7 @@ const handleSave = async () => {
                           minute: '2-digit' 
                         }) : 'Date TBD'}
                       </p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2">
                         <Clock className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">{session.duration_minutes || 60} minutes</span>
                       </div>
@@ -1171,18 +1283,15 @@ const handleSave = async () => {
               </h3>
               
               <div className="space-y-3">
-                {[1, 2].map((_, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">Sarah Wilson</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">UI/UX Designer</p>
-                    </div>
-                    <button className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors">
-                      Connect
-                    </button>
-                  </div>
-                ))}
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  Browse users to find recommended connections
+                </p>
+                <button
+                  onClick={() => setShowBrowseUsers(true)}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Browse Users
+                </button>
               </div>
             </div>
           </div>
@@ -1202,6 +1311,15 @@ const handleSave = async () => {
           animation: slide-left 0.3s ease-out forwards;
         }
       `}</style>
+       {/* Browse Users Modal */}
+      <BrowseUsersModal 
+        isOpen={showBrowseUsers} 
+        onClose={() => {
+          setShowBrowseUsers(false);
+          loadConnections();
+          loadConnectionRequests();
+        }} 
+      />
     </div>
   );
 };
