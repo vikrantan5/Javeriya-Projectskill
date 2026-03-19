@@ -14,6 +14,7 @@ from app.models.schemas import (
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.plagiarism_service import plagiarism_detector
+from app.services.activity_service import activity_service
 from typing import List
 from datetime import datetime, timezone
 import logging
@@ -65,9 +66,19 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
                 detail="Failed to create task"
             )
         
+        created_task = result.data[0]
+        
+        # Log activity
+        activity_service.log_task_created(
+            user_id=current_user_id,
+            task_id=created_task['id'],
+            task_title=created_task['title']
+        )
+        
+        
         return {
             "message": "Task created successfully",
-            "task": result.data[0]
+             "task": created_task
         }
     
     except HTTPException:
@@ -469,6 +480,13 @@ async def accept_task(
         }
         
         acceptance_result = db.table('task_acceptors').insert(acceptor_data).execute()
+
+         # Log activity
+        activity_service.log_task_accepted(
+            user_id=current_user_id,
+            task_id=task_id,
+            task_title=task['title']
+        )
         
         # Create notification for creator
         notification = {
@@ -599,6 +617,15 @@ async def assign_task(
         db.table('task_acceptors').update({
             'status': 'rejected'
         }).eq('task_id', task_id).neq('user_id', str(assign_data.user_id)).execute()
+
+
+          # Log activity for both users
+        activity_service.log_task_assigned(
+            acceptor_id=str(assign_data.user_id),
+            creator_id=current_user_id,
+            task_id=task_id,
+            task_title=task['title']
+        )
         
         # Create notification for assigned user
         db.table('notifications').insert({
@@ -749,6 +776,14 @@ async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, curre
         
         # Update task status
         db.table('tasks').update({'status': 'submitted', 'payment_status': 'payment_pending'}).eq('id', task_id).execute()
+
+            # Log activity for both users
+        activity_service.log_task_submitted(
+            acceptor_id=current_user_id,
+            creator_id=task['creator_id'],
+            task_id=task_id,
+            task_title=task['title']
+        )
         if plagiarism_result.get('flagged'):
             admins_result = db.table('users').select('id').eq('role', 'admin').execute()
             for admin in (admins_result.data or []):
@@ -870,6 +905,15 @@ async def approve_task_submission(
                 )
                 
                 logger.info(f"Wallet transfer successful: ₹{task['price']} from {current_user_id} to {task['acceptor_id']}")
+                   # Log activity for both users
+                activity_service.log_task_completed(
+                    acceptor_id=task['acceptor_id'],
+                    creator_id=current_user_id,
+                    task_id=task_id,
+                    task_title=task['title'],
+                    amount=float(task['price'])
+                )
+                
                 
             except Exception as wallet_error:
                 logger.error(f"Wallet transfer failed: {str(wallet_error)}")

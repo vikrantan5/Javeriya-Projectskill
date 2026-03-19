@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { skillService, taskService, sessionService, dashboardService } from '../services/apiService';
+import { skillService, taskService, sessionService, dashboardService, activitiesService } from '../services/apiService';
 import axios from 'axios';
 import CalendarWidget from '../components/CalendarWidget';
 import { 
@@ -130,20 +130,16 @@ const loadRecommendedSkills = async () => {
 
  const loadRecentActivities = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-         const response = await axios.get(`${BACKEND_URL}/api/users/my-activities?limit=20`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Format activities with time ago
-const formattedActivities = (response.data?.activities || []).map(activity => ({
-          ...activity,
-          time: getTimeAgo(activity.time)
-        }));
-        
-        setRecentActivities(formattedActivities);
-      }
+      // Use the correct activities endpoint
+      const activities = await activitiesService.getRecent(20);
+      
+      // Format activities with time ago
+      const formattedActivities = (activities || []).map(activity => ({
+        ...activity,
+        timeAgo: getTimeAgo(activity.time)
+      }));
+      
+      setRecentActivities(formattedActivities);
     } catch (error) {
       console.error('Error loading recent activities:', error);
       setRecentActivities([]);
@@ -503,51 +499,9 @@ const formattedActivities = (response.data?.activities || []).map(activity => ({
 
               {/* Activity Chart */}
               <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Weekly Progress</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setActiveChart('progress')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        activeChart === 'progress' 
-                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' 
-                          : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setActiveChart('distribution')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        activeChart === 'distribution' 
-                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' 
-                          : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      <PieChart className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+              
                 
-                <div className="h-32 flex items-end gap-2">
-                  {[40, 65, 45, 80, 55, 70, 90].map((height, i) => (
-                    <div key={i} className="flex-1 group">
-                      <div className="relative">
-                        <div 
-                          className="h-0 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-t-lg transition-all duration-1000 group-hover:from-indigo-600 group-hover:to-purple-600"
-                          style={{ height: `${height}%` }}
-                        >
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-600 dark:text-gray-400">
-                            {height}%
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-xs text-center mt-2 text-gray-500 dark:text-gray-400">
-                        {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+            
               </div>
             </div>
 

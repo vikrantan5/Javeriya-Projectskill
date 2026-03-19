@@ -512,6 +512,43 @@ export const dashboardService = {
   },
 };
 
+
+
+// ============================================
+// ACTIVITIES SERVICE
+// ============================================
+export const activitiesService = {
+  getRecent: async (limit = 20) => {
+    const response = await api.get(`/api/activities/recent?limit=${limit}`);
+    return response.data;
+  },
+};
+
+// ============================================
+// WALLET SERVICE
+// ============================================
+export const walletService = {
+  getWallet: async () => {
+    const response = await api.get('/api/wallet/');
+    return response.data;
+  },
+
+  getBalance: async () => {
+    const response = await api.get('/api/wallet/balance');
+    return response.data;
+  },
+
+  getTransactions: async (limit = 50) => {
+    const response = await api.get(`/api/wallet/transactions?limit=${limit}`);
+    return response.data;
+  },
+
+  getSummary: async () => {
+    const response = await api.get('/api/wallet/summary');
+    return response.data;
+  },
+};
+
 // ============================================
 // RATING SERVICE
 // ============================================
