@@ -101,6 +101,45 @@ async def get_token_transactions(limit: int = 20, current_user_id: str = Depends
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+
+@router.get("/wallet")
+async def get_wallet_info(current_user_id: str = Depends(get_current_user)):
+    """Get comprehensive wallet information including balance, earnings, spending, and transactions"""
+    try:
+        db = get_db()
+        
+        # Get token balance
+        token_result = db.table('skill_tokens').select('*').eq('user_id', current_user_id).execute()
+        
+        if not token_result.data:
+            # Create token account if doesn't exist
+            token_account = token_service.create_token_account(current_user_id)
+            balance = token_account['balance']
+            total_earned = token_account['total_earned']
+            total_spent = token_account['total_spent']
+        else:
+            token_data = token_result.data[0]
+            balance = token_data.get('balance', 0)
+            total_earned = token_data.get('total_earned', 0)
+            total_spent = token_data.get('total_spent', 0)
+        
+        # Get recent transactions
+        transactions = token_service.get_transaction_history(current_user_id, 10)
+        
+        return {
+            "balance": balance,
+            "total_earned": total_earned,
+            "total_spent": total_spent,
+            "transactions": transactions
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting wallet info: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.get("/me")
 async def get_current_user_profile(current_user_id: str = Depends(get_current_user)):
@@ -134,45 +173,45 @@ async def get_current_user_profile(current_user_id: str = Depends(get_current_us
             detail=str(e)
         )
 
-@router.get("/{user_id}", response_model=UserResponse)
+# @router.get("/{user_id}", response_model=UserResponse)
 
-async def get_user_by_id(user_id: UUID):
-    """Get user profile by ID"""
-    try:
-        db = get_db()
+# async def get_user_by_id(user_id: UUID):
+#     """Get user profile by ID"""
+#     try:
+#         db = get_db()
         
-        user_result = db.table('users').select('*').eq('id', user_id).execute()
+#         user_result = db.table('users').select('*').eq('id', user_id).execute()
         
-        if not user_result.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+#         if not user_result.data:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="User not found"
+#             )
         
-        user_data = user_result.data[0]
+#         user_data = user_result.data[0]
         
-        # Get user's skills
-        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
-        user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
+#         # Get user's skills
+#         skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
+#         user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
         
-        # Get upcoming sessions count
-        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
-        user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
+#         # Get upcoming sessions count
+#         upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
+#         user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
         
-        # Get connections/followers count
-        connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
-        user_data['connections_count'] = len(connections.data) if connections.data else 0
+#         # Get connections/followers count
+#         connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
+#         user_data['connections_count'] = len(connections.data) if connections.data else 0
         
-        return user_data
+#         return user_data
     
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching user: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"Error fetching user: {str(e)}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=str(e)
+#         )
     
 
 @router.get("/upcoming-sessions")
@@ -216,6 +255,46 @@ async def get_upcoming_sessions(current_user_id: str = Depends(get_current_user)
     
     except Exception as e:
         logger.error(f"Error getting upcoming sessions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user_by_id(user_id: UUID):
+    """Get user profile by ID"""
+    try:
+        db = get_db()
+        
+        user_result = db.table('users').select('*').eq('id', user_id).execute()
+        
+        if not user_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        user_data = user_result.data[0]
+        
+        # Get user's skills
+        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
+        user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
+        
+        # Get upcoming sessions count
+        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
+        user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
+        
+        # Get connections/followers count
+        connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
+        user_data['connections_count'] = len(connections.data) if connections.data else 0
+        
+        return user_data
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

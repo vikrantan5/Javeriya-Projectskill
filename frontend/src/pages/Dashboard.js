@@ -132,12 +132,12 @@ const loadRecommendedSkills = async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await axios.get(`${BACKEND_URL}/api/users/me/recent-activities`, {
+         const response = await axios.get(`${BACKEND_URL}/api/users/my-activities?limit=20`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         // Format activities with time ago
-        const formattedActivities = (response.data || []).map(activity => ({
+const formattedActivities = (response.data?.activities || []).map(activity => ({
           ...activity,
           time: getTimeAgo(activity.time)
         }));

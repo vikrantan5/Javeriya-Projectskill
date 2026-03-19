@@ -42,7 +42,8 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
             'price': float(task_data.price),
             'currency': 'INR',
             'deadline': task_data.deadline.isoformat(),
-            'status': 'open'
+            'status': 'open',
+            'payment_status': 'unpaid'
         }
         if task_data.subject:
             new_task['subject'] = task_data.subject
@@ -585,7 +586,8 @@ async def assign_task(
         db.table('tasks').update({
             'status': 'accepted',
             'assigned_user_id': str(assign_data.user_id),
-            'acceptor_id': str(assign_data.user_id)  # Keep for backward compatibility
+            'acceptor_id': str(assign_data.user_id),  # Keep for backward compatibility
+            'payment_status': 'unpaid'
         }).eq('id', task_id).execute()
         
         # Update acceptor status to assigned
@@ -746,7 +748,7 @@ async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, curre
         
         
         # Update task status
-        db.table('tasks').update({'status': 'submitted'}).eq('id', task_id).execute()
+        db.table('tasks').update({'status': 'submitted', 'payment_status': 'payment_pending'}).eq('id', task_id).execute()
         if plagiarism_result.get('flagged'):
             admins_result = db.table('users').select('id').eq('role', 'admin').execute()
             for admin in (admins_result.data or []):
@@ -792,7 +794,7 @@ async def approve_task_submission(
     current_user_id: str = Depends(get_current_user)
 ):
     review_notes = payload.get('review_notes')
-    """Approve task submission and release payment"""
+    """Approve task submission, release payment, and update wallet transactions"""
     try:
         db = get_db()
         
@@ -813,6 +815,12 @@ async def approve_task_submission(
                 detail="Task has not been submitted yet"
             )
         
+        if not task.get('acceptor_id'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task has no acceptor assigned"
+            )
+        
         # Get submission
         submission_result = db.table('task_submissions').select('*').eq('task_id', task_id).execute()
         
@@ -830,25 +838,51 @@ async def approve_task_submission(
         }).eq('task_id', task_id).execute()
         
         # Update task status
-        db.table('tasks').update({'status': 'completed'}).eq('id', task_id).execute()
+        db.table('tasks').update({'status': 'completed', 'payment_status': 'paid'}).eq('id', task_id).execute()
         
         # Update acceptor's total_tasks_completed
         acceptor_result = db.table('users').select('total_tasks_completed').eq('id', task['acceptor_id']).limit(1).execute()
         total_completed = (acceptor_result.data[0].get('total_tasks_completed') or 0) + 1 if acceptor_result.data else 1
         db.table('users').update({'total_tasks_completed': total_completed}).eq('id', task['acceptor_id']).execute()
 
+        # Handle payment and wallet transactions
         payment_result = db.table('payments').select('*').eq('task_id', task_id).eq('status', 'completed').eq('is_escrowed', True).order('created_at', desc=True).limit(1).execute()
         if payment_result.data:
+            payment = payment_result.data[0]
+            
+            # Release payment
             db.table('payments').update({
                 'status': 'released',
                 'released_at': utc_now_iso()
-            }).eq('id', payment_result.data[0]['id']).execute()
+            }).eq('id', payment['id']).execute()
+            
+            # Create wallet transactions
+            # 1. Debit from creator (payer)
+            from app.services.token_service import token_service
+            token_service._record_transaction(
+                user_id=current_user_id,
+                transaction_type='spend',
+                amount=int(task['price']),
+                reason='task_payment',
+                reference_id=task_id,
+                balance_after=0  # Will be updated by token_service if using tokens
+            )
+            
+            # 2. Credit to acceptor (worker)
+            token_service._record_transaction(
+                user_id=task['acceptor_id'],
+                transaction_type='earn',
+                amount=int(task['price']),
+                reason='task_payment',
+                reference_id=task_id,
+                balance_after=0  # Will be updated by token_service if using tokens
+            )
         
         # Create notification for acceptor
         notification = {
             'user_id': task['acceptor_id'],
-            'title': 'Task Approved',
-            'message': f'Your submission for "{task["title"]}" has been approved!',
+            'title': 'Task Approved & Payment Released!',
+            'message': f'Your submission for "{task["title"]}" has been approved! ₹{task["price"]} has been credited.',
             'notification_type': 'task_update',
             'reference_id': task_id,
             'reference_type': 'task'
@@ -856,8 +890,9 @@ async def approve_task_submission(
         db.table('notifications').insert(notification).execute()
         
         return {
-            "message": "Task approved and payment released",
+            "message": "Task approved, payment released, and wallet updated",
             "task_id": task_id,
+            "amount_paid": task['price'],
             "review_notes": review_notes
         }
     
