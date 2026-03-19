@@ -323,4 +323,123 @@ Provide a brief 2-3 sentence professional assessment focusing on whether this ca
             logger.error(f"Error getting Groq analysis: {str(e)}")
             return None
 
+    async def rank_multiple_candidates(
+        self,
+        task_id: str,
+        applicant_ids: list,
+        task_creator_id: str
+    ) -> Dict:
+        """
+        Rank multiple candidates for a task
+        
+        Returns:
+            {
+                "rankings": [
+                    {
+                        "user_id": "...",
+                        "rank": 1,
+                        "score": 85,
+                        "decision": "recommended",
+                        "is_best_match": True,
+                        "highlights": ["strength1", "strength2"]
+                    },
+                    ...
+                ],
+                "best_match_id": "user_id",
+                "recommendation": "Detailed comparison and recommendation"
+            }
+        """
+        try:
+            # Get recommendations for all applicants
+            candidates = []
+            
+            for applicant_id in applicant_ids:
+                try:
+                    recommendation = await self.get_assignment_recommendation(
+                        task_id,
+                        applicant_id,
+                        task_creator_id
+                    )
+                    
+                    candidates.append({
+                        "user_id": applicant_id,
+                        "score": recommendation['overall_score'],
+                        "decision": recommendation['decision'],
+                        "confidence": recommendation['confidence'],
+                        "strengths": recommendation['strengths'],
+                        "flags": recommendation['flags'],
+                        "breakdown": recommendation['breakdown']
+                    })
+                except Exception as e:
+                    logger.error(f"Error getting recommendation for {applicant_id}: {str(e)}")
+                    continue
+            
+            # Sort by score (descending)
+            candidates.sort(key=lambda x: x['score'], reverse=True)
+            
+            # Assign ranks and identify best match
+            rankings = []
+            best_match_id = None
+            
+            for rank, candidate in enumerate(candidates, 1):
+                is_best_match = rank == 1 and candidate['score'] >= 70
+                
+                if is_best_match:
+                    best_match_id = candidate['user_id']
+                
+                rankings.append({
+                    "user_id": candidate['user_id'],
+                    "rank": rank,
+                    "score": candidate['score'],
+                    "decision": candidate['decision'],
+                    "confidence": candidate['confidence'],
+                    "is_best_match": is_best_match,
+                    "highlights": candidate['strengths'][:3],  # Top 3 strengths
+                    "concerns": candidate['flags'][:2],  # Top 2 concerns
+                    "breakdown": candidate['breakdown']
+                })
+            
+            # Generate comparison summary
+            comparison = self._generate_comparison_summary(rankings)
+            
+            return {
+                "rankings": rankings,
+                "best_match_id": best_match_id,
+                "total_candidates": len(rankings),
+                "recommendation": comparison
+            }
+            
+        except Exception as e:
+            logger.error(f"Error ranking candidates: {str(e)}")
+            raise
+    
+    def _generate_comparison_summary(self, rankings: list) -> str:
+        """Generate human-readable comparison of candidates"""
+        if not rankings:
+            return "No candidates to compare"
+        
+        summary = "**Candidate Ranking Summary:**\n\n"
+        
+        # Best match
+        if rankings[0]['is_best_match']:
+            summary += f"🏆 **Best Match**: Candidate #{1} (Score: {rankings[0]['score']:.0f}/100)\n"
+            summary += f"   Standout qualities: {', '.join(rankings[0]['highlights'][:2])}\n\n"
+        
+        # Top 3
+        summary += "**Top Candidates:**\n"
+        for i, candidate in enumerate(rankings[:3], 1):
+            emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉"
+            summary += f"{emoji} **Rank {i}**: Score {candidate['score']:.0f}/100 - {candidate['decision'].replace('_', ' ').title()}\n"
+            if candidate['highlights']:
+                summary += f"   Strengths: {', '.join(candidate['highlights'][:2])}\n"
+            if candidate['concerns']:
+                summary += f"   Concerns: {', '.join(candidate['concerns'])}\n"
+            summary += "\n"
+        
+        # Overall recommendation
+        if len(rankings) > 3:
+            summary += f"**Note**: {len(rankings) - 3} additional candidate(s) evaluated with lower scores.\n"
+        
+        return summary
+
 ai_assignment_service = AIAssignmentService()

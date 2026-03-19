@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import UserProfileModal from '../components/UserProfileModal';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { skillService, taskService, sessionService, dashboardService, activitiesService } from '../services/apiService';
@@ -47,7 +48,8 @@ import {
   Share2,
   MoreHorizontal,
   Coins,
-  Loader2
+  Loader2,
+  User
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -68,6 +70,8 @@ const Dashboard = () => {
   const [activeChart, setActiveChart] = useState('progress');
  const [tokenBalance, setTokenBalance] = useState(null);
   const [loadingTokens, setLoadingTokens] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   useEffect(() => {
     // Set greeting based on time of day
     const hour = new Date().getHours();
@@ -757,6 +761,17 @@ const loadRecommendedSkills = async () => {
           background: rgba(99, 102, 241, 0.5);
         }
       `}</style>
+
+       {/* User Profile Modal */}
+      {showProfileModal && selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedUserId(null);
+          }}
+        />
+      )}
     </div>
   );
 };

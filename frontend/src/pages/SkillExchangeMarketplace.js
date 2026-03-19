@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import RealtimeChat from '../components/RealtimeChat';
+import UserProfileModal from '../components/UserProfileModal';
 import { taskService, sessionService } from '../services/apiService';
-import { ArrowLeftRight, Plus, RefreshCw, CheckCircle, AlertCircle, MessageSquare, Calendar, X } from 'lucide-react';
+import { ArrowLeftRight, Plus, RefreshCw, CheckCircle, AlertCircle, MessageSquare, Calendar, X, User } from 'lucide-react';
 
 const initialForm = {
   skill_offered: '',
@@ -58,6 +59,10 @@ const SkillExchangeMarketplace = () => {
     meeting_topic: '',
     meeting_duration_minutes: 60
   });
+
+
+    const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const showToast = (message, type = 'success') => {
     const safeMessage = typeof message === 'string' ? message : String(message ?? 'Unexpected error');
@@ -275,6 +280,20 @@ const SkillExchangeMarketplace = () => {
                           </div>
 
                           <div className="flex gap-2">
+                              {/* View Profile Button - Always show for other users */}
+                          {creator && !isMyTask && (
+                            <button
+                              onClick={() => {
+                                setSelectedUserId(creator.id || exchangeTask.creator_id);
+                                setShowProfileModal(true);
+                              }}
+                              className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2 whitespace-nowrap"
+                              data-testid="exchange-view-profile-button"
+                            >
+                              <User className="w-4 h-4" />
+                              View Profile
+                            </button>
+                          )}
   {activeTab === 'marketplace' && exchangeTask.status === 'open' && !isMyTask && (
                               <button
                                 onClick={() => handleAccept(exchangeTask.id)}
@@ -444,6 +463,18 @@ const SkillExchangeMarketplace = () => {
             />
           </div>
         </div>
+      )}
+
+      
+      {/* User Profile Modal */}
+      {showProfileModal && selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedUserId(null);
+          }}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { sessionService } from '../services/apiService';
 import RealtimeChat from '../components/RealtimeChat';
+import UserProfileModal from '../components/UserProfileModal';
 import {
   Calendar,
   Clock,
@@ -74,8 +75,10 @@ const SessionBooking = () => {
   });
 
 
-   const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [chatSession, setChatSession] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     loadSessions();
@@ -482,7 +485,19 @@ const SessionBooking = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                     <div className="flex gap-2 flex-wrap">
+                      {/* View Profile Button */}
+                      <button
+                        onClick={() => {
+                          setSelectedUserId(session.mentor_id || session.learner_id);
+                          setShowProfileModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        data-testid="view-profile-button"
+                      >
+                        <User className="w-4 h-4" />
+                        View Profile
+                      </button>
                       {session.meeting_link && session.status === 'scheduled' && (
                         <a
                           href={session.meeting_link}
@@ -791,6 +806,17 @@ const SessionBooking = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* User Profile Modal */}
+      {showProfileModal && selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedUserId(null);
+          }}
+        />
       )}
     </div>
   );

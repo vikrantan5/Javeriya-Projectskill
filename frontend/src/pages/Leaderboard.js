@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import UserProfileModal from '../components/UserProfileModal';
 import axios from 'axios';
 import {
   Trophy,
@@ -18,7 +19,8 @@ import {
   Sparkles,
   ChevronRight,
   RefreshCw,
-  Filter
+  Filter,
+  User
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -28,7 +30,8 @@ const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   useEffect(() => {
     loadLeaderboard();
   }, [activeCategory]);
@@ -244,7 +247,7 @@ const Leaderboard = () => {
                       )}
 
                       {/* Stats */}
-                      <div className="space-y-2">
+                     <div className="space-y-2 mb-4">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">Score</span>
                           <span className="font-bold text-indigo-600 dark:text-indigo-400">
@@ -269,6 +272,18 @@ const Leaderboard = () => {
                           </>
                         )}
                       </div>
+                          {/* View Profile Button */}
+                      <button
+                        onClick={() => {
+                          setSelectedUserId(entry.user_id || entry.id);
+                          setShowProfileModal(true);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        data-testid="leaderboard-view-profile-button"
+                      >
+                        <User className="w-4 h-4" />
+                        View Profile
+                      </button>
                     </div>
                   </div>
                 );
@@ -357,8 +372,18 @@ const Leaderboard = () => {
                           )}
                         </div>
 
-                        {/* Arrow */}
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                        {/* View Profile Button */}
+                        <button
+                          onClick={() => {
+                            setSelectedUserId(entry.user_id || entry.id);
+                            setShowProfileModal(true);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                          data-testid="leaderboard-list-view-profile-button"
+                        >
+                          <User className="w-4 h-4" />
+                          Profile
+                        </button>
                       </div>
                     </div>
                   );
@@ -385,6 +410,16 @@ const Leaderboard = () => {
           animation-delay: 1s;
         }
       `}</style>
+          {/* User Profile Modal */}
+      {showProfileModal && selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedUserId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
