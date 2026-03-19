@@ -46,6 +46,7 @@ const Leaderboard = () => {
       // Transform data to match frontend expectations
       const transformedData = response.data.leaderboard?.map(item => ({
         rank: item.rank,
+        user_id: item.user_id || item.user?.id,
         username: item.user?.username || item.username,
         full_name: item.user?.full_name || item.full_name,
         profile_photo: item.user?.profile_photo || item.profile_photo,

@@ -4,7 +4,7 @@ Uses Groq AI and rule-based scoring to recommend whether to assign a task to a u
 """
 from app.database import get_db
 from app.services.user_stats_service import user_stats_service
-from app.ai.groq_service import groq_chat
+from app.ai.groq_service import groq_service
 from app.config import settings
 import logging
 from typing import Dict, Optional

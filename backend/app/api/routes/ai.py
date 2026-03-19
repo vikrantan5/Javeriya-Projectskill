@@ -301,7 +301,7 @@ async def get_chat_history(session_id: str, current_user_id: str = Depends(get_c
 
 class AssignmentDecisionRequest(BaseModel):
     task_id: str
-    candidate_user_id: str
+    user_id: str
 
 class RankCandidatesRequest(BaseModel):
     task_id: str
@@ -327,7 +327,7 @@ async def get_assignment_decision(
         
         recommendation = await ai_assignment_service.get_assignment_recommendation(
             task_id=request.task_id,
-            user_id=request.candidate_user_id,
+             user_id=request.user_id,
             task_creator_id=current_user_id
         )
         

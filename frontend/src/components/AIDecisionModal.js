@@ -20,7 +20,30 @@ const AIDecisionModal = ({ taskId, userId, userName, isOpen, onClose, onDecision
       setDecision(response.data);
     } catch (err) {
       console.error('Error getting AI decision:', err);
-      setError(err.response?.data?.detail || 'Failed to get AI recommendation');
+       
+      // Handle different error formats
+      let errorMessage = 'Failed to get AI recommendation';
+      
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        
+        // Handle Pydantic validation errors (array of error objects)
+        if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail.map(e => 
+            typeof e === 'object' ? e.msg || JSON.stringify(e) : e
+          ).join(', ');
+        } 
+        // Handle string error message
+        else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        }
+        // Handle object error
+        else if (typeof errorData.detail === 'object') {
+          errorMessage = JSON.stringify(errorData.detail);
+        }
+      }
+      
+      setError(errorMessage);
     }
     setLoading(false);
   };
