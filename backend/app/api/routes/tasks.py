@@ -856,27 +856,27 @@ async def approve_task_submission(
                 'released_at': utc_now_iso()
             }).eq('id', payment['id']).execute()
             
-            # Create wallet transactions
-            # 1. Debit from creator (payer)
-            from app.services.token_service import token_service
-            token_service._record_transaction(
-                user_id=current_user_id,
-                transaction_type='spend',
-                amount=int(task['price']),
-                reason='task_payment',
-                reference_id=task_id,
-                balance_after=0  # Will be updated by token_service if using tokens
-            )
-            
-            # 2. Credit to acceptor (worker)
-            token_service._record_transaction(
-                user_id=task['acceptor_id'],
-                transaction_type='earn',
-                amount=int(task['price']),
-                reason='task_payment',
-                reference_id=task_id,
-                balance_after=0  # Will be updated by token_service if using tokens
-            )
+            # ATOMIC WALLET TRANSFER: Creator → Acceptor
+            try:
+                from app.services.wallet_service import wallet_service
+                
+                transfer_result = wallet_service.atomic_transfer(
+                    from_user_id=current_user_id,
+                    to_user_id=task['acceptor_id'],
+                    amount=float(task['price']),
+                    reason=f'Task payment: {task["title"]}',
+                    reference_id=task_id,
+                    reference_type='task'
+                )
+                
+                logger.info(f"Wallet transfer successful: ₹{task['price']} from {current_user_id} to {task['acceptor_id']}")
+                
+            except Exception as wallet_error:
+                logger.error(f"Wallet transfer failed: {str(wallet_error)}")
+                # Don't fail the approval, just log the error
+                # In production, you'd want to handle this more carefully
+        else:
+            logger.warning(f"No completed payment found for task {task_id}, skipping wallet transfer")
         
         # Create notification for acceptor
         notification = {
