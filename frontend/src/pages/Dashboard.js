@@ -766,6 +766,7 @@ const loadRecommendedSkills = async () => {
       {showProfileModal && selectedUserId && (
         <UserProfileModal
           userId={selectedUserId}
+             isOpen={showProfileModal}
           onClose={() => {
             setShowProfileModal(false);
             setSelectedUserId(null);

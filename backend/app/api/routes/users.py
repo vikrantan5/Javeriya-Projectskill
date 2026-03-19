@@ -3,6 +3,8 @@ from app.models.schemas import UserResponse, UserUpdate
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.token_service import token_service
+from app.services.user_stats_service import user_stats_service
+from app.services.trust_score_service import trust_score_service
 from uuid import UUID
 import logging
 import os
@@ -300,6 +302,90 @@ async def get_user_by_id(user_id: UUID):
             detail=str(e)
         )
 
+
+
+@router.get("/{user_id}/full-profile")
+async def get_user_full_profile(user_id: str):
+    """Get complete user profile with statistics (PUBLIC - no auth required)"""
+    try:
+        # Get comprehensive user statistics using the service
+        user_stats = user_stats_service.get_user_statistics(user_id)
+        
+        if not user_stats:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return user_stats
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching full user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/{user_id}/statistics")
+async def get_user_statistics_endpoint(user_id: str):
+    """Get detailed user statistics (PUBLIC)"""
+    try:
+        stats = user_stats_service.get_user_statistics(user_id)
+        
+        if not stats:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Return only statistics, not profile data
+        return {
+            "user_id": stats['user_id'],
+            "tasks_completed": stats['tasks_completed'],
+            "tasks_failed": stats['tasks_failed'],
+            "total_tasks_attempted": stats['total_tasks_attempted'],
+            "success_rate": stats['success_rate'],
+            "avg_rating": stats['avg_rating'],
+            "total_reviews": stats['total_reviews'],
+            "on_time_percentage": stats['on_time_percentage'],
+            "late_submissions": stats['late_submissions'],
+            "connection_count": stats['connection_count'],
+            "sessions_completed": stats['sessions_completed']
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user statistics: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/{user_id}/trust-score")
+async def get_user_trust_score(user_id: str):
+    """Get user trust score with risk indicators (PUBLIC, TRANSPARENT)"""
+    try:
+        trust_score_data = trust_score_service.calculate_trust_score(user_id)
+        
+        if not trust_score_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return trust_score_data
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching trust score: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 @router.get("/connections")
 async def get_connections(current_user_id: str = Depends(get_current_user)):
     """Get user's connections"""

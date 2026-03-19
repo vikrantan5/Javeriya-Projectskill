@@ -292,3 +292,95 @@ async def get_chat_history(session_id: str, current_user_id: str = Depends(get_c
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+
+
+# ============================================
+# AI Assignment Decision Endpoints (Phase 3)
+# ============================================
+
+class AssignmentDecisionRequest(BaseModel):
+    task_id: str
+    candidate_user_id: str
+
+class RankCandidatesRequest(BaseModel):
+    task_id: str
+    candidate_user_ids: List[str]
+
+@router.post("/assignment-decision")
+async def get_assignment_decision(
+    request: AssignmentDecisionRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    Get AI-powered recommendation for assigning a task to a candidate
+    
+    Returns comprehensive analysis including:
+    - Overall recommendation (recommended/not_recommended/neutral)
+    - Confidence score (0-100)
+    - Skill match, reliability, and rating breakdown
+    - Strengths and concerns
+    - AI-generated analysis
+    """
+    try:
+        from app.services.ai_assignment_service import ai_assignment_service
+        
+        recommendation = await ai_assignment_service.get_assignment_recommendation(
+            task_id=request.task_id,
+            user_id=request.candidate_user_id,
+            task_creator_id=current_user_id
+        )
+        
+        return recommendation
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error getting assignment decision: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/rank-candidates")
+async def rank_task_candidates(
+    request: RankCandidatesRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    Rank multiple candidates for a task with best match identification
+    
+    Returns:
+    - Ranked list of candidates with scores and emojis (🥇🥈🥉)
+    - Best match identification (score >= 70 and rank #1)
+    - Side-by-side comparison
+    - AI-generated summary
+    """
+    try:
+        from app.services.ai_assignment_service import ai_assignment_service
+        
+        if len(request.candidate_user_ids) == 0:
+            raise ValueError("At least one candidate is required")
+        
+        ranking = await ai_assignment_service.rank_multiple_candidates(
+            task_id=request.task_id,
+            applicant_ids=request.candidate_user_ids,
+            task_creator_id=current_user_id
+        )
+        
+        return ranking
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error ranking candidates: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
