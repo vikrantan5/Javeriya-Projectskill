@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, XCircle, User, Star, Award, MessageSquare, Loader2, Users } from 'lucide-react';
+import { X, CheckCircle, XCircle, User, Star, Award, MessageSquare, Loader2, Users, Eye, Sparkles } from 'lucide-react';
 import { taskService } from '../services/apiService';
+import UserProfileModal from './UserProfileModal';
+import AIDecisionModal from './AIDecisionModal';
 
 const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => {
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(null);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
+  const [aiDecisionUser, setAIDecisionUser] = useState(null);
 
   useEffect(() => {
     if (isOpen && task?.id) {
@@ -26,9 +30,6 @@ const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => 
   };
 
   const handleAssign = async (applicantUserId) => {
-    if (!window.confirm('Are you sure you want to assign this task to this applicant?')) {
-      return;
-    }
 
     setAssigning(applicantUserId);
     try {
@@ -44,6 +45,34 @@ const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => 
       alert('Failed to assign task: ' + (error.response?.data?.detail || error.message));
     }
     setAssigning(null);
+  };
+
+
+  
+  const handleViewProfile = (userId) => {
+    setSelectedProfileUserId(userId);
+  };
+
+  const handleAskAI = (user) => {
+    setAIDecisionUser(user);
+  };
+
+  const handleAIDecisionComplete = async (decision) => {
+    // AI decision made, now ask for confirmation
+    if (decision.decision === 'recommended') {
+      if (window.confirm(`AI recommends this candidate with ${decision.confidence}% confidence. Proceed with assignment?`)) {
+        await handleAssign(aiDecisionUser.id);
+      }
+    } else if (decision.decision === 'not_recommended') {
+      if (window.confirm(`AI does NOT recommend this candidate (${decision.confidence}% confidence). Do you still want to assign?`)) {
+        await handleAssign(aiDecisionUser.id);
+      }
+    } else {
+      if (window.confirm(`AI gives a neutral assessment (${decision.confidence}% confidence). Proceed with assignment?`)) {
+        await handleAssign(aiDecisionUser.id);
+      }
+    }
+    setAIDecisionUser(null);
   };
 
   if (!isOpen) return null;
@@ -197,11 +226,31 @@ const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => 
 
                         {/* Action Buttons */}
                         {isPending && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2">
+                            {/* Primary Actions */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleViewProfile(user.id)}
+                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                                data-testid="view-profile-button"
+                              >
+                                <Eye className="w-4 h-4" />
+                                View Profile
+                              </button>
+                              <button
+                                onClick={() => handleAskAI(user)}
+                                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2"
+                                data-testid="ask-ai-button"
+                              >
+                                <Sparkles className="w-4 h-4" />
+                                Ask AI
+                              </button>
+                            </div>
+                            {/* Assignment Button */}
                             <button
-                              onClick={() => handleAssign(user.id)}
+                              onClick={() => handleAskAI(user)}
                               disabled={assigning === user.id}
-                              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2"
+                              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2.5 rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-green-600/25 flex items-center justify-center gap-2"
                               data-testid="assign-applicant-button"
                             >
                               {assigning === user.id ? (
@@ -211,8 +260,8 @@ const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => 
                                 </>
                               ) : (
                                 <>
-                                  <CheckCircle className="w-4 h-4" />
-                                  Assign Task
+                                  <Sparkles className="w-4 h-4" />
+                                  Ask AI & Assign Task
                                 </>
                               )}
                             </button>
@@ -237,6 +286,22 @@ const TaskApplicantsModal = ({ task, isOpen, onClose, onApplicantAssigned }) => 
           </button>
         </div>
       </div>
+           {/* Profile Modal */}
+      <UserProfileModal
+        userId={selectedProfileUserId}
+        isOpen={!!selectedProfileUserId}
+        onClose={() => setSelectedProfileUserId(null)}
+      />
+
+      {/* AI Decision Modal */}
+      <AIDecisionModal
+        taskId={task?.id}
+        userId={aiDecisionUser?.id}
+        userName={aiDecisionUser?.full_name || aiDecisionUser?.username}
+        isOpen={!!aiDecisionUser}
+        onClose={() => setAIDecisionUser(null)}
+        onDecisionComplete={handleAIDecisionComplete}
+      />
     </div>
   );
 };
