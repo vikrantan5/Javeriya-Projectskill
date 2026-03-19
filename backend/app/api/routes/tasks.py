@@ -822,6 +822,82 @@ async def submit_task(task_id: str, submission_data: TaskSubmissionCreate, curre
             detail=str(e)
         )
 
+
+
+@router.get("/{task_id}/approval-status")
+async def get_task_approval_status(
+    task_id: str,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Check if task is ready for approval and get approval status"""
+    try:
+        db = get_db()
+        
+        # Get task
+        task_result = db.table('tasks').select('*').eq('id', task_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        task = task_result.data[0]
+        
+        # Check if user is creator or acceptor
+        is_creator = task['creator_id'] == current_user_id
+        is_acceptor = task.get('acceptor_id') == current_user_id or task.get('assigned_user_id') == current_user_id
+        
+        if not (is_creator or is_acceptor):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this task's approval status"
+            )
+        
+        # Get submission
+        submission_result = db.table('task_submissions').select('*').eq('task_id', task_id).execute()
+        has_submission = bool(submission_result.data)
+        
+        # Determine approval status
+        can_approve = (
+            is_creator and 
+            task['status'] == 'submitted' and 
+            has_submission
+        )
+        
+        status_message = ""
+        if task['status'] == 'completed':
+            status_message = "Task is already approved and completed"
+        elif task['status'] == 'submitted':
+            if is_creator:
+                status_message = "Task is ready for your approval" if can_approve else "Waiting for submission"
+            else:
+                status_message = "Waiting for creator to review and approve"
+        elif task['status'] == 'accepted':
+            status_message = "Task is in progress, not yet submitted"
+        elif task['status'] == 'open':
+            status_message = "Task is open, not yet accepted"
+        
+        return {
+            "task_id": task_id,
+            "status": task['status'],
+            "payment_status": task.get('payment_status', 'unknown'),
+            "can_approve": can_approve,
+            "is_creator": is_creator,
+            "is_acceptor": is_acceptor,
+            "has_submission": has_submission,
+            "message": status_message,
+            "submission_count": len(submission_result.data) if submission_result.data else 0
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking approval status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 @router.post("/{task_id}/approve")
 async def approve_task_submission(
     task_id: str,
@@ -843,11 +919,18 @@ async def approve_task_submission(
             )
         
         task = task_result.data[0]
+
+        # Check task status
+        if task['status'] == 'completed':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Task is already completed and approved. Payment status: {task.get('payment_status', 'unknown')}"
+            )
         
         if task['status'] != 'submitted':
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Task has not been submitted yet"
+                    detail=f"Task cannot be approved. Current status: {task['status']}. Task must be in 'submitted' status to approve."
             )
         
         if not task.get('acceptor_id'):
