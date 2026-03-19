@@ -261,7 +261,63 @@ async def get_upcoming_sessions(current_user_id: str = Depends(get_current_user)
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+
+@router.get("/connections")
+async def get_connections(current_user_id: str = Depends(get_current_user)):
+    """Get user's connections"""
+    try:
+        db = get_db()
+        
+        try:
+            # Get accepted connections where user is either initiator or receiver
+            connections_as_initiator = db.table('connections').select('*').eq('user_id', current_user_id).eq('status', 'accepted').execute()
+            connections_as_receiver = db.table('connections').select('*').eq('connected_user_id', current_user_id).eq('status', 'accepted').execute()
+            
+            all_connections = (connections_as_initiator.data or []) + (connections_as_receiver.data or [])
+            
+            if not all_connections:
+                return {"connections": []}
+            
+            # Get connected user IDs
+            connected_user_ids = []
+            for conn in all_connections:
+                other_user_id = conn['connected_user_id'] if conn['user_id'] == current_user_id else conn['user_id']
+                connected_user_ids.append(other_user_id)
+            
+            # Get user details
+            users_result = db.table('users').select('id, username, full_name, profile_photo, bio').in_('id', connected_user_ids).execute()
+            
+            # Get primary skill for each user
+            results = []
+            for user in users_result.data:
+                skills_result = db.table('user_skills').select('skill_name').eq('user_id', user['id']).limit(1).execute()
+                primary_skill = skills_result.data[0]['skill_name'] if skills_result.data else 'Developer'
+                
+                results.append({
+                    'id': user['id'],
+                    'username': user['username'],
+                    'full_name': user.get('full_name'),
+                    'profile_photo': user.get('profile_photo'),
+                    'primary_skill': primary_skill,
+                    'bio': user.get('bio', '')[:100] + '...' if user.get('bio', '') else ''
+                })
+            
+            return {"connections": results}
+        except Exception as conn_error:
+            # Handle case where connections table doesn't exist
+            if "Could not find the table 'public.connections'" in str(conn_error):
+                logger.warning(f"Connections table not found: {conn_error}")
+                return {"connections": [], "message": "Connections feature requires database setup. Please create the connections table."}
+            raise
     
+    except Exception as e:
+        logger.error(f"Error getting connections: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+     
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(user_id: UUID):
@@ -287,9 +343,12 @@ async def get_user_by_id(user_id: UUID):
         upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
         user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
         
-        # Get connections/followers count
-        connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
-        user_data['connections_count'] = len(connections.data) if connections.data else 0
+  # Get connections/followers count
+        try:
+            connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
+            user_data['connections_count'] = len(connections.data) if connections.data else 0
+        except Exception:
+            user_data['connections_count'] = 0
         
         return user_data
     
@@ -386,53 +445,7 @@ async def get_user_trust_score(user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-@router.get("/connections")
-async def get_connections(current_user_id: str = Depends(get_current_user)):
-    """Get user's connections"""
-    try:
-        db = get_db()
-        
-        # Get accepted connections where user is either initiator or receiver
-        connections_as_initiator = db.table('connections').select('*').eq('user_id', current_user_id).eq('status', 'accepted').execute()
-        connections_as_receiver = db.table('connections').select('*').eq('connected_user_id', current_user_id).eq('status', 'accepted').execute()
-        
-        all_connections = (connections_as_initiator.data or []) + (connections_as_receiver.data or [])
-        
-        if not all_connections:
-            return {"connections": []}
-        
-        # Get connected user IDs
-        connected_user_ids = []
-        for conn in all_connections:
-            other_user_id = conn['connected_user_id'] if conn['user_id'] == current_user_id else conn['user_id']
-            connected_user_ids.append(other_user_id)
-        
-        # Get user details
-        users_result = db.table('users').select('id, username, full_name, profile_photo, bio').in_('id', connected_user_ids).execute()
-        
-        # Get primary skill for each user
-        results = []
-        for user in users_result.data:
-            skills_result = db.table('user_skills').select('skill_name').eq('user_id', user['id']).limit(1).execute()
-            primary_skill = skills_result.data[0]['skill_name'] if skills_result.data else 'Developer'
-            
-            results.append({
-                'id': user['id'],
-                'username': user['username'],
-                'full_name': user.get('full_name'),
-                'profile_photo': user.get('profile_photo'),
-                'primary_skill': primary_skill,
-                'bio': user.get('bio', '')[:100] + '...' if user.get('bio', '') else ''
-            })
-        
-        return {"connections": results}
-    
-    except Exception as e:
-        logger.error(f"Error getting connections: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+
 
 @router.get("/profile-completion")
 async def get_profile_completion(current_user_id: str = Depends(get_current_user)):

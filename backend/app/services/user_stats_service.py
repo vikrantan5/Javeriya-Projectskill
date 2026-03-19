@@ -103,9 +103,13 @@ class UserStatsService:
             skills = skills_result.data or []
             
             # Get connections count
-            connections_as_initiator = db.table('connections').select('id').eq('user_id', user_id).eq('status', 'accepted').execute()
-            connections_as_receiver = db.table('connections').select('id').eq('connected_user_id', user_id).eq('status', 'accepted').execute()
-            connection_count = len((connections_as_initiator.data or [])) + len((connections_as_receiver.data or []))
+            try:
+                connections_as_initiator = db.table('connections').select('id').eq('user_id', user_id).eq('status', 'accepted').execute()
+                connections_as_receiver = db.table('connections').select('id').eq('connected_user_id', user_id).eq('status', 'accepted').execute()
+                connection_count = len((connections_as_initiator.data or [])) + len((connections_as_receiver.data or []))
+            except Exception as conn_error:
+                logger.warning(f"Connections table not available: {conn_error}")
+                connection_count = 0
             
             # Get sessions completed
             mentor_sessions = db.table('learning_sessions').select('id').eq('mentor_id', user_id).eq('status', 'completed').execute()
