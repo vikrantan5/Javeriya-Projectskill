@@ -64,7 +64,7 @@ const Profile = () => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState({
-full_name: '',
+    full_name: '',
     bio: '',
     location: '',
     phone: '',
@@ -92,12 +92,14 @@ full_name: '',
   const [recentActivity, setRecentActivity] = useState([]);
   const [achievements, setAchievements] = useState([]);
 
-  const fileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
   const resumeInputRef = useRef(null);
-   const avatarInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
   const [avatar, setAvatar] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   
   // Trust Score & Token Balance
   const [trustScore, setTrustScore] = useState(null);
@@ -107,10 +109,10 @@ full_name: '',
   const [loadingTokens, setLoadingTokens] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [resumeResult, setResumeResult] = useState(null);
-    const [showBrowseUsers, setShowBrowseUsers] = useState(false);
+  const [showBrowseUsers, setShowBrowseUsers] = useState(false);
   const [connectionRequests, setConnectionRequests] = useState([]);
 
-const handleSave = async () => {
+  const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(`${BACKEND_URL}/api/users/me`, {
@@ -122,15 +124,14 @@ const handleSave = async () => {
         github: profileData.github,
         twitter: profileData.twitter,
         linkedin: profileData.linkedin,
-       
         company: profileData.company,
         job_title: profileData.jobTitle
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-    alert('Profile updated successfully!');
-    setIsEditing(false);
-     loadProfileData(); // Reload profile data
+      alert('Profile updated successfully!');
+      setIsEditing(false);
+      loadProfileData();
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Failed to update profile: ' + (error.response?.data?.detail || error.message));
@@ -143,17 +144,40 @@ const handleSave = async () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-   const handleImageUpload = async (type, file) => {
+  // Fixed handleImageUpload function
+  const handleImageUpload = async (type, file) => {
     if (!file) return;
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size too large. Maximum size is 5MB.');
+      return;
+    }
+    
+    if (type === 'avatar') {
+      setUploadingAvatar(true);
+    } else {
+      setUploadingCover(true);
+    }
     
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('file', file);
       
+      // Use correct endpoints
       const endpoint = type === 'avatar' 
         ? `${BACKEND_URL}/api/users/upload-profile-photo`
         : `${BACKEND_URL}/api/users/upload-background-photo`;
+      
+      console.log(`Uploading ${type} to:`, endpoint);
       
       const response = await axios.post(endpoint, formData, {
         headers: { 
@@ -162,23 +186,34 @@ const handleSave = async () => {
         }
       });
       
+      console.log(`${type} upload response:`, response.data);
+      
       if (type === 'avatar') {
         setAvatar(response.data.photo_url);
+        // Update profileData with new avatar URL
+        setProfileData(prev => ({ ...prev, profile_photo: response.data.photo_url }));
       } else {
         setCoverImage(response.data.photo_url);
+        setProfileData(prev => ({ ...prev, background_photo: response.data.photo_url }));
       }
       
       alert(response.data.message);
-      loadProfileData(); // Reload profile
+      
+      // Reload profile data to ensure everything is synced
+      await loadProfileData();
     } catch (error) {
       console.error(`Error uploading ${type}:`, error);
       alert(`Failed to upload ${type}: ` + (error.response?.data?.detail || error.message));
+    } finally {
+      if (type === 'avatar') {
+        setUploadingAvatar(false);
+      } else {
+        setUploadingCover(false);
+      }
     }
   };
 
-
-
-  // Load Trust Score
+  // Load all data
   useEffect(() => {
     if (user?.id) {
       loadProfileData();
@@ -200,6 +235,8 @@ const handleSave = async () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('Profile data loaded:', response.data);
+      
       const userData = response.data;
       setProfileData({
         full_name: userData.full_name || '',
@@ -220,18 +257,25 @@ const handleSave = async () => {
       
       // Set avatar and cover image from backend
       if (userData.profile_photo) {
+        console.log('Setting avatar from URL:', userData.profile_photo);
         setAvatar(userData.profile_photo);
-      }
-      if (userData.background_photo) {
-        setCoverImage(userData.background_photo);
+      } else {
+        setAvatar(null);
       }
       
-       // Load user stats from dedicated endpoint
-      loadUserStats();
+      if (userData.background_photo) {
+        console.log('Setting cover from URL:', userData.background_photo);
+        setCoverImage(userData.background_photo);
+      } else {
+        setCoverImage(null);
+      }
+      
+      // Load user stats from dedicated endpoint
+      await loadUserStats();
       // Load dynamic activities
-      loadActivities();
+      await loadActivities();
       // Load dynamic achievements
-      loadAchievements();
+      await loadAchievements();
     } catch (error) {
       console.error('Error loading profile data:', error);
     }
@@ -326,7 +370,7 @@ const handleSave = async () => {
     }
   };
 
-   const loadActivities = async () => {
+  const loadActivities = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${BACKEND_URL}/api/users/my-activities?limit=20`, {
@@ -398,7 +442,7 @@ const handleSave = async () => {
       setResumeResult(response.data);
       alert(`Resume uploaded! ${response.data.auto_add_result?.added_count || 0} skills added to your profile.`);
 
-       // Reload profile data to refresh skills
+      // Reload profile data to refresh skills
       await loadProfileData();
     } catch (error) {
       console.error('Error uploading resume:', error);
@@ -414,14 +458,13 @@ const handleSave = async () => {
     if (score >= 60) return { label: 'Bronze Mentor', color: 'orange', icon: '🥉', bgGradient: 'from-orange-400 to-orange-600' };
     return { label: 'Aspiring Mentor', color: 'indigo', icon: '⭐', bgGradient: 'from-indigo-400 to-indigo-600' };
   };
+  
   const stats = [
-  { icon: BookOpen, label: 'Sessions', value: userStats.total_sessions, color: 'blue', trend: '+12%' },
+    { icon: BookOpen, label: 'Sessions', value: userStats.total_sessions, color: 'blue', trend: '+12%' },
     { icon: Briefcase, label: 'Tasks', value: userStats.total_tasks_completed, color: 'green', trend: '+8%' },
     { icon: Star, label: 'Rating', value: userStats.average_rating?.toFixed(1) || '0.0', suffix: '⭐', color: 'yellow', trend: '+0.2' },
     { icon: Users, label: 'Mentees', value: userStats.total_mentees, color: 'purple', trend: '+15%' },
   ];
-
-
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
@@ -431,7 +474,7 @@ const handleSave = async () => {
   ];
 
   return (
-    <div className={`min-h-screen  ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page" >
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page">
       <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
       
       {/* Settings Sidebar */}
@@ -492,22 +535,27 @@ const handleSave = async () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
         
         <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-all"
+          onClick={() => coverInputRef.current?.click()}
+          disabled={uploadingCover}
+          className="absolute bottom-4 right-4 p-3 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-all disabled:opacity-50"
         >
-          <Camera className="w-5 h-5" />
+          {uploadingCover ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
         </button>
         
         <input
           type="file"
-          ref={fileInputRef}
+          ref={coverInputRef}
           className="hidden"
           accept="image/*"
-          onChange={(e) => handleImageUpload('cover', e.target.files[0])}
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              handleImageUpload('cover', e.target.files[0]);
+            }
+          }}
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-8 ">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-8">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
           <div className="flex flex-col md:flex-row md:items-end gap-6">
@@ -529,19 +577,25 @@ const handleSave = async () => {
                 <div className="relative">
                   <button 
                     onClick={() => setShowAvatarMenu(!showAvatarMenu)}
-                    className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white hover:bg-indigo-700 transition-colors"
+                    disabled={uploadingAvatar}
+                    className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
                   >
-                    <Camera className="w-4 h-4" />
+                    {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                   </button>
                   
-                                   {showAvatarMenu && (
+                  {showAvatarMenu && (
                     <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-10">
                       <input
                         type="file"
                         ref={avatarInputRef}
                         className="hidden"
                         accept="image/*"
-                        onChange={(e) => e.target.files?.[0] && handleImageUpload('avatar', e.target.files[0])}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleImageUpload('avatar', e.target.files[0]);
+                            setShowAvatarMenu(false);
+                          }
+                        }}
                       />
                       <button 
                         onClick={() => {
@@ -557,6 +611,7 @@ const handleSave = async () => {
                         onClick={() => {
                           setAvatar(null);
                           setShowAvatarMenu(false);
+                          // Optionally call API to remove photo
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                       >
@@ -582,7 +637,7 @@ const handleSave = async () => {
               </div>
               
               <div className="flex items-center gap-4 text-gray-500">
-                <span className="flex items-center gap-1 ">
+                <span className="flex items-center gap-1">
                   <User className="w-4 h-4" />
                   @{user?.username}
                 </span>
@@ -602,7 +657,7 @@ const handleSave = async () => {
           <div className="flex gap-3 mt-4 md:mt-0">
             <button
               onClick={handleCopyProfileLink}
-              className="p-3 bg-blue-300 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="p-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
               title="Copy profile link"
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -610,7 +665,7 @@ const handleSave = async () => {
             
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="flex bg-blue-300 items-center gap-2 px-4 py-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="flex items-center gap-2 px-4 py-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
               data-testid="edit-profile-button"
             >
               {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
@@ -619,7 +674,7 @@ const handleSave = async () => {
 
             <button
               onClick={() => setShowSettings(true)}
-              className="p-3 bg-blue-300 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="p-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
             >
               <Settings className="w-5 h-5" />
             </button>
