@@ -444,7 +444,6 @@ async def update_user_profile(update_data: UserUpdate, current_user_id: str = De
         )
     
 
-
 @router.post("/upload-profile-photo")
 async def upload_profile_photo(
     file: UploadFile = File(...),
@@ -452,35 +451,60 @@ async def upload_profile_photo(
 ):
     """Upload profile photo to Supabase storage"""
     try:
+        logger.info(f"Uploading profile photo for user: {current_user_id}")
+        
         # Validate file type
-        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
         if file.content_type not in allowed_types:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type. Only JPEG, PNG, and WEBP are allowed."
+                detail=f"Invalid file type: {file.content_type}. Only JPEG, PNG, WEBP, and GIF are allowed."
             )
         
         # Read file content
         file_content = await file.read()
+        logger.info(f"File size: {len(file_content)} bytes")
         
         # Generate unique filename
-        file_extension = file.filename.split('.')[-1]
-        file_name = f"profile_{current_user_id}_{datetime.now().timestamp()}.{file_extension}"
-        file_path = f"profile-photos/{file_name}"
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+        file_name = f"profile_{current_user_id}_{int(datetime.now().timestamp())}.{file_extension}"
+        file_path = file_name  # Just the filename, not nested in folder
+        
+        logger.info(f"Uploading to path: {file_path}")
         
         # Upload to Supabase storage
-        storage_response = supabase.storage.from_('profile-photos').upload(
-            file_path,
-            file_content,
-            {"content-type": file.content_type}
-        )
+        try:
+            storage_response = supabase.storage.from_('profile-photos').upload(
+                file_path,
+                file_content,
+                {
+                    "content-type": file.content_type,
+                    "upsert": "true"
+                }
+            )
+            logger.info(f"Upload response: {storage_response}")
+        except Exception as storage_error:
+            logger.error(f"Storage upload error: {str(storage_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload to storage: {str(storage_error)}"
+            )
         
         # Get public URL
-        public_url = supabase.storage.from_('profile-photos').get_public_url(file_path)
+        public_url_response = supabase.storage.from_('profile-photos').get_public_url(file_path)
+        
+        # Extract URL from response (it might be a dict or string)
+        if isinstance(public_url_response, dict):
+            public_url = public_url_response.get('publicUrl') or public_url_response.get('publicURL')
+        else:
+            public_url = public_url_response
+            
+        logger.info(f"Public URL: {public_url}")
         
         # Update user profile with photo URL
         db = get_db()
-        db.table('users').update({'profile_photo': public_url}).eq('id', current_user_id).execute()
+        update_response = db.table('users').update({'profile_photo': public_url}).eq('id', current_user_id).execute()
+        logger.info(f"Database update response: {update_response}")
         
         return {
             "message": "Profile photo uploaded successfully",
@@ -490,10 +514,10 @@ async def upload_profile_photo(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error uploading profile photo: {str(e)}")
+        logger.error(f"Error uploading profile photo: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Upload failed: {str(e)}"
         )
 
 @router.post("/upload-background-photo")
