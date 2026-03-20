@@ -90,10 +90,69 @@ async def create_skill_exchange_session(
         if not participant2_id:
             raise HTTPException(status_code=400, detail="Exchange not matched yet")
         
-        # Generate Google Meet link
-        meeting_link = "https://meet.google.com/new"
+        # Get participant details (emails for calendar invites)
+        participant1_result = db.table('users').select('email, username, full_name').eq('id', participant1_id).execute()
+        participant2_result = db.table('users').select('email, username, full_name').eq('id', participant2_id).execute()
         
-        # Create session record
+        if not participant1_result.data or not participant2_result.data:
+            raise HTTPException(status_code=404, detail="Participant information not found")
+        
+        participant1 = participant1_result.data[0]
+        participant2 = participant2_result.data[0]
+        
+        participant1_email = participant1.get('email')
+        participant2_email = participant2.get('email')
+        participant1_name = participant1.get('full_name') or participant1.get('username')
+        participant2_name = participant2.get('full_name') or participant2.get('username')
+        
+        # Parse the meeting date
+        try:
+            # Handle both ISO format and datetime-local format
+            if 'T' in session_data.meeting_date:
+                # Already in ISO format or datetime-local format
+                meeting_datetime = datetime.fromisoformat(session_data.meeting_date.replace('Z', '+00:00'))
+            else:
+                # Just a date, add time
+                meeting_datetime = datetime.fromisoformat(f"{session_data.meeting_date}T00:00:00")
+        except ValueError as e:
+            logger.error(f"Invalid date format: {session_data.meeting_date}")
+            raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+        
+        # Import Google Calendar service
+        from app.services.google_calendar_service import google_calendar_service
+        
+        # Create Google Calendar event with Meet link
+        event_summary = f"TalentConnect: {session_data.meeting_topic}"
+        event_description = f"""
+Skill Exchange Session between {participant1_name} and {participant2_name}
+
+Skills being exchanged:
+• {task.get('skill_offered', 'N/A')} ↔ {task.get('skill_requested', 'N/A')}
+
+This is an automatically scheduled meeting via TalentConnect.
+Both participants will receive calendar invitations with the Google Meet link.
+
+Duration: {session_data.meeting_duration_minutes} minutes
+        """.strip()
+        
+        # Create the calendar event
+        calendar_result = google_calendar_service.create_meeting_event(
+            summary=event_summary,
+            description=event_description,
+            start_datetime=meeting_datetime,
+            duration_minutes=session_data.meeting_duration_minutes,
+            attendee_emails=[participant1_email, participant2_email],
+            timezone='UTC'
+        )
+        
+        if not calendar_result.get('success'):
+            logger.error(f"Failed to create Google Calendar event: {calendar_result.get('error')}")
+            raise HTTPException(status_code=500, detail="Failed to create calendar event")
+        
+        meeting_link = calendar_result.get('meeting_link')
+        google_event_id = calendar_result.get('event_id')
+        
+        # Create session record with the actual Google Meet link
         new_session = {
             'exchange_task_id': session_data.exchange_task_id,
             'participant1_id': participant1_id,
@@ -102,6 +161,7 @@ async def create_skill_exchange_session(
             'meeting_duration_minutes': session_data.meeting_duration_minutes,
             'meeting_topic': session_data.meeting_topic,
             'meeting_link': meeting_link,
+            'google_event_id': google_event_id,
             'status': 'scheduled',
             'created_by': current_user_id
         }
@@ -111,22 +171,57 @@ async def create_skill_exchange_session(
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create session")
         
-        # Notify both participants
-        other_user_id = participant2_id if current_user_id == participant1_id else participant1_id
+        # Send email notifications to both participants using SendGrid
+        from app.services.email_service import send_session_scheduled_email
+        
+        try:
+            # Send to participant 1
+            send_session_scheduled_email(
+                to_email=participant1_email,
+                to_name=participant1_name,
+                meeting_topic=session_data.meeting_topic,
+                meeting_date=session_data.meeting_date,
+                meeting_link=meeting_link,
+                other_participant_name=participant2_name
+            )
+            
+            # Send to participant 2
+            send_session_scheduled_email(
+                to_email=participant2_email,
+                to_name=participant2_name,
+                meeting_topic=session_data.meeting_topic,
+                meeting_date=session_data.meeting_date,
+                meeting_link=meeting_link,
+                other_participant_name=participant1_name
+            )
+        except Exception as email_error:
+            logger.warning(f"Failed to send email notifications: {str(email_error)}")
+            # Don't fail the request if email fails
+        
+        # Create in-app notifications for both participants
+        db.table('notifications').insert({
+            'user_id': participant1_id,
+            'title': '✅ Skill Exchange Session Scheduled!',
+            'message': f'Meeting scheduled for {session_data.meeting_topic} on {session_data.meeting_date}. Check your email for calendar invite and Google Meet link.',
+            'notification_type': 'session_scheduled',
+            'reference_id': result.data[0]['id'],
+            'reference_type': 'skill_exchange_session'
+        }).execute()
         
         db.table('notifications').insert({
-            'user_id': other_user_id,
-            'title': 'Skill Exchange Session Scheduled! 📅',
-            'message': f'Meeting scheduled for {session_data.meeting_topic} on {session_data.meeting_date}',
+            'user_id': participant2_id,
+            'title': '✅ Skill Exchange Session Scheduled!',
+            'message': f'Meeting scheduled for {session_data.meeting_topic} on {session_data.meeting_date}. Check your email for calendar invite and Google Meet link.',
             'notification_type': 'session_scheduled',
             'reference_id': result.data[0]['id'],
             'reference_type': 'skill_exchange_session'
         }).execute()
         
         return {
-            "message": "Session scheduled successfully",
+            "message": "Session scheduled successfully! Both participants will receive calendar invitations via email.",
             "session": result.data[0],
-            "meeting_link": meeting_link
+            "meeting_link": meeting_link,
+            "google_event_id": google_event_id
         }
         
     except HTTPException:
@@ -134,7 +229,6 @@ async def create_skill_exchange_session(
     except Exception as e:
         logger.error(f"Error creating skill exchange session: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/skill-exchange-sessions", response_model=List[dict])
 async def get_skill_exchange_sessions(current_user_id: str = Depends(get_current_user)):
     """Get all skill exchange sessions for current user"""

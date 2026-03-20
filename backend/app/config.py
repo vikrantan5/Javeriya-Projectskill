@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     EMAIL_PORT: int
     EMAIL_USE_TLS: bool
     EMAIL_HOST_USER: str
+
+
+       # Google Calendar API
+    GOOGLE_CALENDAR_ID: str
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: str
+    GOOGLE_PROJECT_ID: str
+    GOOGLE_PRIVATE_KEY_ID: str
+    GOOGLE_PRIVATE_KEY: str
+    GOOGLE_CLIENT_ID: str
     
     # CORS
     CORS_ORIGINS: str = "*"
