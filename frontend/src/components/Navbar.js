@@ -221,11 +221,11 @@ const Navbar = () => {
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
                 </div>
-                <div className="hidden md:block text-left">
+                {/* <div className="hidden md:block text-left">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.username}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role || 'Student'}</p>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`} />
+                </div> */}
+                {/* <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`} /> */}
               </button>
 
               {/* Profile Dropdown Menu */}
