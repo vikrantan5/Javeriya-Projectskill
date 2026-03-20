@@ -1,22 +1,14 @@
 """
-Resume Parser Service - Extract skills from PDF/DOCX resumes using NLP
+Resume Parser Service - Extract skills from PDF/DOCX resumes using keyword matching
 """
 import PyPDF2
 import docx
-import spacy
 import re
 import logging
 from typing import List, Set
 import io
 
 logger = logging.getLogger(__name__)
-
-# Load spaCy model
-try:
-    nlp = spacy.load("en_core_web_sm")
-except:
-    logger.warning("spaCy model not loaded. Run: python -m spacy download en_core_web_sm")
-    nlp = None
 
 class ResumeParser:
     """Service for parsing resumes and extracting skills"""
@@ -105,7 +97,7 @@ class ResumeParser:
     
     def extract_skills_from_text(self, text: str) -> List[str]:
         """
-        Extract skills from text using keyword matching and NLP
+       Extract skills from text using keyword matching
         
         Args:
             text: Resume text content
@@ -123,26 +115,11 @@ class ResumeParser:
             # Direct keyword matching
             for skill in self.all_skills:
                 # Use word boundaries to avoid partial matches
-                  pattern = r'\b' + re.escape(skill.lower()) + r'\b'
+                  pattern = r'b' + re.escape(skill.lower()) + r'b'
                   if re.search(pattern, text_lower):
                     found_skills.add(skill.title())
             
-            # Additional NLP-based extraction using spaCy
-            if nlp:
-                doc = nlp(text[:1000000])  # Limit text size for performance
-                
-                # Extract entities and noun chunks as potential skills
-                for ent in doc.ents:
-                    if ent.label_ in ['PRODUCT', 'ORG', 'LANGUAGE']:
-                        skill_text = ent.text.lower()
-                        if skill_text in self.all_skills:
-                            found_skills.add(skill_text.title())
-                
-                # Extract noun phrases that might be skills
-                for chunk in doc.noun_chunks:
-                    chunk_text = chunk.text.lower()
-                    if chunk_text in self.all_skills:
-                        found_skills.add(chunk_text.title())
+       
             
             # Sort and return skills
             return sorted(list(found_skills))
