@@ -51,7 +51,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto ">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
@@ -68,7 +68,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }) => {
               <p className="text-gray-600 dark:text-gray-400">{error}</p>
             </div>
           ) : profile ? (
-            <div className="p-6">
+            <div className="p-6 mt-10">
               {/* Profile Header */}
               <div className="flex items-start gap-4 mb-6 -mt-20">
                 {profile.profile_data?.profile_photo ? (
