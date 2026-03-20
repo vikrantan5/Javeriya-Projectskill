@@ -93,35 +93,33 @@ class GoogleCalendarService:
             # to avoid \"Domain-Wide Delegation\" requirement. 
             # Invites will be sent through the app's own email service.
             event = {
-                'summary': summary,
-                'description': description,
-                'start': {
-                    'dateTime': start_str,
-                    'timeZone': timezone,
-                },
-                'end': {
-                    'dateTime': end_str,
-                    'timeZone': timezone,
-                },
-                # Store attendees for reference but won't auto-send calendar invites
-                'attendees': [{'email': email} for email in attendee_emails] if attendee_emails else [],
-                'conferenceData': {
-                    'createRequest': {
-                        'requestId': f"talentconnect-{uuid.uuid4()}",
-                        'conferenceSolutionKey': {'type': 'hangoutsMeet'}
-                    }
-                },
-                'reminders': {
-                    'useDefault': False,
-                    'overrides': [
-                        {'method': 'popup', 'minutes': 60},  # 1 hour before
-                        {'method': 'popup', 'minutes': 10},  # 10 minutes before
-                    ],
-                },
-                'guestsCanModify': False,
-                'guestsCanInviteOthers': False,
-                'guestsCanSeeOtherGuests': True,
-            }
+    'summary': summary,
+    'description': description,
+    'start': {
+        'dateTime': start_str,
+        'timeZone': timezone,
+    },
+    'end': {
+        'dateTime': end_str,
+        'timeZone': timezone,
+    },
+    'conferenceData': {
+        'createRequest': {
+            'requestId': f"talentconnect-{uuid.uuid4()}",
+            'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+        }
+    },
+    'reminders': {
+        'useDefault': False,
+        'overrides': [
+            {'method': 'popup', 'minutes': 60},
+            {'method': 'popup', 'minutes': 10},
+        ],
+    },
+    'guestsCanModify': False,
+    'guestsCanInviteOthers': False,
+    'guestsCanSeeOtherGuests': True,
+}
             
             # Create the event
               # sendUpdates='none' - Don't send automatic Google Calendar invites
