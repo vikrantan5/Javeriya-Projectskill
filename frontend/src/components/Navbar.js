@@ -75,7 +75,7 @@ const Navbar = () => {
 
   return (
      <nav 
-      className={`sticky top-0 z-50 transition-all duration-300 w-full overflow-x-hidden ${
+      className={`sticky top-0 z-50 transition-all duration-300 w-full ${
         isScrolled 
           ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg' 
           : 'bg-white dark:bg-gray-900 shadow-md'
@@ -230,7 +230,7 @@ const Navbar = () => {
 
               {/* Profile Dropdown Menu */}
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50 animate-slide-down">
+                 <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2 z-[100] animate-slide-down">
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.full_name || user?.username}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>

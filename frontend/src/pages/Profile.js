@@ -1184,7 +1184,7 @@ const handleSave = async () => {
             )}
             
                        {/* Connections */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Connections</h3>
                 <button
@@ -1229,7 +1229,7 @@ const handleSave = async () => {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
                        {/* Upcoming Sessions */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">

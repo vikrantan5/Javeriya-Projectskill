@@ -163,6 +163,12 @@ async def get_current_user_profile(current_user_id: str = Depends(get_current_us
         skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', current_user_id).execute()
         user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
         user_data['skills_detailed'] = skills_result.data or []
+
+          # Ensure interests and languages are included (they should be in users table)
+        if 'interests' not in user_data or user_data['interests'] is None:
+            user_data['interests'] = []
+        if 'languages' not in user_data or user_data['languages'] is None:
+            user_data['languages'] = []
         
         return user_data
     
@@ -317,134 +323,7 @@ async def get_connections(current_user_id: str = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-     
 
-@router.get("/{user_id}", response_model=UserResponse)
-async def get_user_by_id(user_id: UUID):
-    """Get user profile by ID"""
-    try:
-        db = get_db()
-        
-        user_result = db.table('users').select('*').eq('id', user_id).execute()
-        
-        if not user_result.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        user_data = user_result.data[0]
-        
-        # Get user's skills
-        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
-        user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
-        
-        # Get upcoming sessions count
-        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
-        user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
-        
-  # Get connections/followers count
-        try:
-            connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
-            user_data['connections_count'] = len(connections.data) if connections.data else 0
-        except Exception:
-            user_data['connections_count'] = 0
-        
-        return user_data
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching user: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-
-
-@router.get("/{user_id}/full-profile")
-async def get_user_full_profile(user_id: str):
-    """Get complete user profile with statistics (PUBLIC - no auth required)"""
-    try:
-        # Get comprehensive user statistics using the service
-        user_stats = user_stats_service.get_user_statistics(user_id)
-        
-        if not user_stats:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        return user_stats
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching full user profile: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-@router.get("/{user_id}/statistics")
-async def get_user_statistics_endpoint(user_id: str):
-    """Get detailed user statistics (PUBLIC)"""
-    try:
-        stats = user_stats_service.get_user_statistics(user_id)
-        
-        if not stats:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        # Return only statistics, not profile data
-        return {
-            "user_id": stats['user_id'],
-            "tasks_completed": stats['tasks_completed'],
-            "tasks_failed": stats['tasks_failed'],
-            "total_tasks_attempted": stats['total_tasks_attempted'],
-            "success_rate": stats['success_rate'],
-            "avg_rating": stats['avg_rating'],
-            "total_reviews": stats['total_reviews'],
-            "on_time_percentage": stats['on_time_percentage'],
-            "late_submissions": stats['late_submissions'],
-            "connection_count": stats['connection_count'],
-            "sessions_completed": stats['sessions_completed']
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching user statistics: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-@router.get("/{user_id}/trust-score")
-async def get_user_trust_score(user_id: str):
-    """Get user trust score with risk indicators (PUBLIC, TRANSPARENT)"""
-    try:
-        trust_score_data = trust_score_service.calculate_trust_score(user_id)
-        
-        if not trust_score_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        return trust_score_data
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching trust score: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
 
 
 @router.get("/profile-completion")
@@ -981,6 +860,139 @@ async def get_achievements(current_user_id: str = Depends(get_current_user)):
     
     except Exception as e:
         logger.error(f"Error getting achievements: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+
+# IMPORTANT: Routes with path parameters (/{user_id}) must come AFTER all specific routes
+# to prevent FastAPI from matching specific routes like /browse, /my-activities as user_id
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user_by_id(user_id: UUID):
+    """Get user profile by ID"""
+    try:
+        db = get_db()
+        
+        user_result = db.table('users').select('*').eq('id', user_id).execute()
+        
+        if not user_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        user_data = user_result.data[0]
+        
+        # Get user's skills
+        skills_result = db.table('user_skills').select('skill_name, skill_level, is_verified').eq('user_id', str(user_id)).execute()
+        user_data['skills'] = [skill['skill_name'] for skill in (skills_result.data or [])]
+        
+        # Get upcoming sessions count
+        upcoming_sessions = db.table('learning_sessions').select('id').eq('mentor_id', str(user_id)).eq('status', 'scheduled').execute()
+        user_data['upcoming_sessions_count'] = len(upcoming_sessions.data) if upcoming_sessions.data else 0
+        
+        # Get connections/followers count
+        try:
+            connections = db.table('connections').select('id').eq('user_id', str(user_id)).eq('status', 'accepted').execute()
+            user_data['connections_count'] = len(connections.data) if connections.data else 0
+        except Exception:
+            user_data['connections_count'] = 0
+        
+        return user_data
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{user_id}/full-profile")
+async def get_user_full_profile(user_id: str):
+    """Get complete user profile with statistics (PUBLIC - no auth required)"""
+    try:
+        # Get comprehensive user statistics using the service
+        user_stats = user_stats_service.get_user_statistics(user_id)
+        
+        if not user_stats:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return user_stats
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching full user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{user_id}/statistics")
+async def get_user_statistics_endpoint(user_id: str):
+    """Get detailed user statistics (PUBLIC)"""
+    try:
+        stats = user_stats_service.get_user_statistics(user_id)
+        
+        if not stats:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Return only statistics, not profile data
+        return {
+            "user_id": stats['user_id'],
+            "tasks_completed": stats['tasks_completed'],
+            "tasks_failed": stats['tasks_failed'],
+            "total_tasks_attempted": stats['total_tasks_attempted'],
+            "success_rate": stats['success_rate'],
+            "avg_rating": stats['avg_rating'],
+            "total_reviews": stats['total_reviews'],
+            "on_time_percentage": stats['on_time_percentage'],
+            "late_submissions": stats['late_submissions'],
+            "connection_count": stats['connection_count'],
+            "sessions_completed": stats['sessions_completed']
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user statistics: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{user_id}/trust-score")
+async def get_user_trust_score(user_id: str):
+    """Get user trust score with risk indicators (PUBLIC, TRANSPARENT)"""
+    try:
+        trust_score_data = trust_score_service.calculate_trust_score(user_id)
+        
+        if not trust_score_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return trust_score_data
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching trust score: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
