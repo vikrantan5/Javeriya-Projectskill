@@ -103,12 +103,11 @@ class GoogleCalendarService:
         'dateTime': end_str,
         'timeZone': timezone,
     },
-    'conferenceData': {
-        'createRequest': {
-            'requestId': f"talentconnect-{uuid.uuid4()}",
-            'conferenceSolutionKey': {'type': 'hangoutsMeet'}
-        }
-    },
+   'conferenceData': {
+    'createRequest': {
+        'requestId': str(uuid.uuid4())
+    }
+},
     'reminders': {
         'useDefault': False,
         'overrides': [
