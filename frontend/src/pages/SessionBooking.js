@@ -487,7 +487,7 @@ const SessionBooking = () => {
                     {/* Action Buttons */}
                      <div className="flex gap-2 flex-wrap">
                       {/* View Profile Button */}
-                      <button
+                      {/* <button
                         onClick={() => {
                           setSelectedUserId(session.mentor_id || session.learner_id);
                           setShowProfileModal(true);
@@ -497,7 +497,7 @@ const SessionBooking = () => {
                       >
                         <User className="w-4 h-4" />
                         View Profile
-                      </button>
+                      </button> */}
                       {session.meeting_link && session.status === 'scheduled' && (
                         <a
                           href={session.meeting_link}

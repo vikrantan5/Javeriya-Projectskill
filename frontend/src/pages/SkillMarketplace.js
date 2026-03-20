@@ -368,136 +368,148 @@ const SkillMarketplace = () => {
                 {mySkills.map((skill) => {
                   const LevelIcon = getLevelIcon(skill.skill_level);
                   return (
-                    <div
-                      key={skill.id}
-                      className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
-                      data-testid="skill-card"
-                    >
-                      {/* Card Header with Gradient */}
-                      <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
-                        <div className="absolute inset-0 bg-black/20"></div>
-                        <div className="relative flex justify-between items-start">
-                          <span className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-white text-xs">
-                            #{skill.skill_name?.slice(0, 2).toUpperCase()}
-                          </span>
-                          {skill.is_verified && (
-                            <span className="flex items-center gap-1 px-2 py-1 bg-green-500/20 backdrop-blur text-green-400 rounded-full text-xs">
-                              <CheckCircle className="w-3 h-3" />
-                              Verified
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                   <div
+  key={skill.id}
+  className="group bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+  data-testid="skill-card"
+>
+  {/* Top Section */}
+  <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+    <div className="flex items-start justify-between">
+      
+      {/* Title + Description */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {skill.skill_name}
+        </h3>
 
-                      {/* Card Body */}
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{skill.skill_name}</h3>
-                          <div className="flex gap-1">
-                            <button 
-                              onClick={() => {
-                                setEditSkill(skill);
-                                setShowEditModal(true);
-                              }}
-                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4 text-gray-400" />
-                            </button>
-                            <button 
-                              onClick={() => setDeleteConfirm(skill.id)}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            >
-                              <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
-                            </button>
-                          </div>
-                        </div>
+        {skill.description && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+            {skill.description}
+          </p>
+        )}
+      </div>
 
-                        {/* Delete Confirmation */}
-                        {deleteConfirm === skill.id && (
-                          <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                            <p className="text-sm text-red-600 dark:text-red-400 mb-2">Delete this skill?</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleDeleteSkill(skill.id)}
-                                className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                              >
-                                Yes
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                              >
-                                No
-                              </button>
-                            </div>
-                          </div>
-                        )}
+      {/* Actions */}
+      <div className="flex gap-1">
+        <button
+          onClick={() => {
+            setEditSkill(skill);
+            setShowEditModal(true);
+          }}
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+        >
+          <Edit2 className="w-4 h-4 text-gray-500" />
+        </button>
 
-                        {/* Skill Description */}
-                        {skill.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                            {skill.description}
-                          </p>
-                        )}
+        <button
+          onClick={() => setDeleteConfirm(skill.id)}
+          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition"
+        >
+          <X className="w-4 h-4 text-gray-500 hover:text-red-500" />
+        </button>
+      </div>
+    </div>
 
-                        <div className="space-y-3">
-                          {/* Type Badge */}
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              skill.skill_type === 'offered' 
-                                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                            }`}>
-                              {skill.skill_type === 'offered' ? '📤 Can Teach' : '📥 Want to Learn'}
-                            </span>
-                          </div>
+    {/* Delete Confirmation */}
+    {deleteConfirm === skill.id && (
+      <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+        <p className="text-sm text-red-600 dark:text-red-400 mb-2">
+          Delete this skill?
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleDeleteSkill(skill.id)}
+            className="px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setDeleteConfirm(null)}
+            className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    )}
 
-                          {/* Level with Icon */}
-                          <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getLevelColor(skill.skill_level)}`}>
-                            <LevelIcon className="w-3 h-3" />
-                            <span className="capitalize">{skill.skill_level || 'Not specified'}</span>
-                          </div>
+    {/* Badges */}
+    <div className="flex flex-wrap gap-2 mt-3">
+      <span
+        className={`px-3 py-1 text-xs rounded-full font-medium ${
+          skill.skill_type === "offered"
+            ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+            : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+        }`}
+      >
+        {skill.skill_type === "offered" ? "Can Teach" : "Want to Learn"}
+      </span>
 
-                          {/* Experience & Rate */}
-                          {(skill.years_experience || skill.hourly_rate) && (
-                            <div className="flex gap-3 text-sm text-gray-600 dark:text-gray-400">
-                              {skill.years_experience && (
-                                <span>📅 {skill.years_experience} years exp.</span>
-                              )}
-                              {skill.hourly_rate && (
-                                <span>💰 ${skill.hourly_rate}/hr</span>
-                              )}
-                            </div>
-                          )}
+      <span
+        className={`px-3 py-1 text-xs rounded-full font-medium ${getLevelColor(
+          skill.skill_level
+        )}`}
+      >
+        {skill.skill_level || "Not specified"}
+      </span>
 
-                          {/* Stats */}
-                          <div className="flex items-center gap-4 pt-3 text-sm text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>{skill.student_count || 0} learners</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-yellow-400" />
-                              <span>{skill.average_rating?.toFixed(1) || '0.0'}</span>
-                            </div>
-                          </div>
-                        </div>
-                             {/* Verify Skill Button */}
-                        {!skill.is_verified && skill.skill_type === 'offered' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSkillQuizModal({ show: true, skill: skill.skill_name, level: skill.skill_level });
-                            }}
-                            className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
-                            data-testid="verify-skill-button"
-                          >
-                            <Shield className="w-4 h-4" />
-                            Verify Skill
-                          </button>
-                        )}
-                      </div>
-                    </div>
+      {skill.is_verified && (
+        <span className="px-3 py-1 text-xs rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+          Verified
+        </span>
+      )}
+    </div>
+  </div>
+
+  {/* Middle Info */}
+  <div className="p-5 space-y-3">
+    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+      {skill.years_experience && (
+        <span>{skill.years_experience} yrs experience</span>
+      )}
+
+      {skill.hourly_rate && (
+        <span className="font-semibold text-gray-900 dark:text-white">
+          ${skill.hourly_rate}/hr
+        </span>
+      )}
+    </div>
+
+    {/* Stats */}
+    <div className="flex justify-between text-sm pt-3 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+        <Users className="w-4 h-4" />
+        {skill.student_count || 0}
+      </div>
+
+      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+        <Star className="w-4 h-4 text-yellow-400" />
+        {skill.average_rating?.toFixed(1) || "0.0"}
+      </div>
+    </div>
+  </div>
+
+  {/* Bottom Action */}
+  {!skill.is_verified && skill.skill_type === "offered" && (
+    <div className="px-5 pb-5">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setSkillQuizModal({
+            show: true,
+            skill: skill.skill_name,
+            level: skill.skill_level,
+          });
+        }}
+        className="w-full py-2.5 text-sm font-medium rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:opacity-90 transition"
+        data-testid="verify-skill-button"
+      >
+        Take Skill Assessment
+      </button>
+    </div>
+  )}
+</div>
                   );
                 })}
               </div>
