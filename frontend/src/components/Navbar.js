@@ -25,8 +25,11 @@ import {
   MessageSquare,
   Award,
    TrendingUp,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Users,
+  Map
 } from 'lucide-react';
+import BrowseUsersModal from './BrowseUsersModal';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -37,6 +40,7 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(3);
+    const [showBrowseUsers, setShowBrowseUsers] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,6 +63,7 @@ const Navbar = () => {
     { path: '/tasks', label: 'Tasks', icon: Briefcase, color: 'green' },
      { path: '/exchange', label: 'Exchange', icon: ArrowLeftRight, color: 'teal' },
     { path: '/sessions', label: 'Sessions', icon: Calendar, color: 'purple' },
+     { path: '/roadmap', label: 'Roadmap', icon: Map, color: 'orange' },
       { path: '/leaderboard', label: 'Leaderboard', icon: Award, color: 'yellow' },
        { path: '/wallet', label: 'Wallet', icon: TrendingUp, color: 'emerald' },
     { path: '/chatbot', label: 'AI Assistant', icon: Bot, color: 'pink', badge: 'New' },
@@ -69,36 +74,36 @@ const Navbar = () => {
   ];
 
   return (
-    <nav 
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+     <nav 
+      className={`sticky top-0 z-50 transition-all duration-300 w-full overflow-x-hidden ${
         isScrolled 
           ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-lg' 
           : 'bg-white dark:bg-gray-900 shadow-md'
       }`} 
       data-testid="navbar"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
+      <div className="w-full mx-auto px-2 sm:px-4 lg:px-6">
+        <div className="flex justify-between h-16 items-center gap-2">
           {/* Logo Section */}
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
             <Link 
               to="/dashboard" 
               className="flex items-center gap-2 group" 
               data-testid="nav-logo"
             >
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <GraduationCap className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <GraduationCap className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 lg:w-3 lg:h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="hidden sm:block text-lg lg:text-xl xl:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent whitespace-nowrap">
                 TalentConnect
               </span>
             </Link>
 
                        {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1 overflow-x-auto scrollbar-hide">
+           <div className="hidden lg:flex items-center gap-0.5 xl:gap-1 overflow-x-auto scrollbar-hide">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isItemActive = isActive(item.path);
@@ -106,18 +111,18 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`relative group px-3 py-2 rounded-xl transition-all duration-200 whitespace-nowrap ${
+                    className={`relative group px-2 xl:px-3 py-2 rounded-lg xl:rounded-xl transition-all duration-200 whitespace-nowrap ${
                       isItemActive
                         ? `bg-${item.color}-50 dark:bg-${item.color}-900/20 text-${item.color}-600 dark:text-${item.color}-400`
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                     data-testid={`nav-${item.label.toLowerCase()}`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${
                         isItemActive ? `text-${item.color}-600` : ''
                       }`} />
-                      <span className="font-medium text-sm">{item.label}</span>
+                      <span className="font-medium text-xs xl:text-sm">{item.label}</span>
                       {item.badge && (
                         <span className={`px-1.5 py-0.5 bg-${item.color}-500 text-white text-xs rounded-full`}>
                           {item.badge}
@@ -130,7 +135,6 @@ const Navbar = () => {
                   </Link>
                 );
               })}
-
               {user?.role === 'admin' && (
                 <Link
                   to="/admin"
@@ -153,8 +157,18 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right Section */}
-          <div className="flex items-center gap-2">
+                 {/* Right Section */}
+          <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+            {/* Browse Users Button */}
+            <button
+              onClick={() => setShowBrowseUsers(true)}
+              className="hidden md:flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+              data-testid="browse-users-button"
+            >
+              <Users className="w-4 h-4" />
+              <span className="text-xs lg:text-sm font-medium hidden lg:inline">Browse Users</span>
+              <span className="text-xs lg:text-sm font-medium lg:hidden">Browse</span>
+            </button>
             {/* Quick Actions */}
             <div className="hidden md:flex items-center gap-1">
               {quickActions.map((action, index) => {
@@ -231,6 +245,17 @@ const Navbar = () => {
                     Your Profile
                   </Link>
                   
+
+                      <button
+                    onClick={() => {
+                      setShowBrowseUsers(true);
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Users className="w-4 h-4" />
+                    Browse Users
+                  </button>
                   <Link
                     to="/settings"
                     className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -315,6 +340,18 @@ const Navbar = () => {
 
             <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
+            {/* Browse Users - Mobile */}
+            <button
+              onClick={() => {
+                setShowBrowseUsers(true);
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-colors"
+            >
+              <Users className="w-5 h-5" />
+              <span className="font-medium">Browse Users</span>
+            </button>
+
             {/* Mobile Quick Actions */}
             {quickActions.map((action, index) => {
               const Icon = action.icon;
@@ -374,6 +411,13 @@ const Navbar = () => {
           animation: slide-down 0.2s ease-out forwards;
         }
       `}</style>
+
+       
+      {/* Browse Users Modal */}
+      <BrowseUsersModal 
+        isOpen={showBrowseUsers} 
+        onClose={() => setShowBrowseUsers(false)} 
+      />
     </nav>
   );
 };
