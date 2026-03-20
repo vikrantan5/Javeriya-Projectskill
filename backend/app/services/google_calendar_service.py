@@ -89,6 +89,9 @@ class GoogleCalendarService:
             end_str = end_datetime.isoformat()
             
             # Build event object
+              # Note: We store attendee emails but don't send automatic Google invites
+            # to avoid \"Domain-Wide Delegation\" requirement. 
+            # Invites will be sent through the app's own email service.
             event = {
                 'summary': summary,
                 'description': description,
@@ -100,7 +103,8 @@ class GoogleCalendarService:
                     'dateTime': end_str,
                     'timeZone': timezone,
                 },
-                'attendees': [{'email': email} for email in attendee_emails],
+                # Store attendees for reference but won't auto-send calendar invites
+                'attendees': [{'email': email} for email in attendee_emails] if attendee_emails else [],
                 'conferenceData': {
                     'createRequest': {
                         'requestId': f"talentconnect-{uuid.uuid4()}",
@@ -110,8 +114,8 @@ class GoogleCalendarService:
                 'reminders': {
                     'useDefault': False,
                     'overrides': [
-                        {'method': 'email', 'minutes': 24 * 60},  # 1 day before
-                        {'method': 'popup', 'minutes': 60},        # 1 hour before
+                        {'method': 'popup', 'minutes': 60},  # 1 hour before
+                        {'method': 'popup', 'minutes': 10},  # 10 minutes before
                     ],
                 },
                 'guestsCanModify': False,
@@ -120,11 +124,13 @@ class GoogleCalendarService:
             }
             
             # Create the event
+              # sendUpdates='none' - Don't send automatic Google Calendar invites
+            # The app will send meeting notifications via its own email service
             created_event = self.calendar_service.events().insert(
                 calendarId=self.calendar_id,
                 body=event,
                 conferenceDataVersion=1,  # Required for Google Meet
-                sendUpdates='all'  # Send email invitations to all attendees
+                    sendUpdates='none'  # Don't send Google Calendar invites (avoids Domain-Wide Delegation requirement)
             ).execute()
             
             # Extract meeting link
@@ -145,6 +151,7 @@ class GoogleCalendarService:
                 'hangout_link': created_event.get('hangoutLink'),
                 'created_at': created_event.get('created'),
                 'summary': created_event.get('summary'),
+                   'attendees': attendee_emails,  # Return attendees so app can send notifications
             }
             
         except HttpError as error:
@@ -207,11 +214,12 @@ class GoogleCalendarService:
                 }
             
             # Update the event
+                # sendUpdates='none' - App handles notifications via its own email service
             updated_event = self.calendar_service.events().update(
                 calendarId=self.calendar_id,
                 eventId=event_id,
                 body=event,
-                sendUpdates='all'
+                   sendUpdates='none'
             ).execute()
             
             logger.info(f"Updated calendar event: {event_id}")
@@ -246,10 +254,12 @@ class GoogleCalendarService:
             Dict with deletion status
         """
         try:
+            # Delete the event
+            # sendUpdates='none' - App handles notifications via its own email service
             self.calendar_service.events().delete(
                 calendarId=self.calendar_id,
                 eventId=event_id,
-                sendUpdates='all'
+                sendUpdates='none'
             ).execute()
             
             logger.info(f"Deleted calendar event: {event_id}")
