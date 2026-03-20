@@ -16,19 +16,15 @@ def validate_password(password: str) -> tuple[bool, str]:
     """
    Simple password validation - just check minimum length
     Returns (is_valid, error_message)
-       
     """
     # Check minimum length
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
     
-   
-    
-    
-   
-    
-  
-    
+     # Check maximum byte length (bcrypt limitation)
+    password_bytes = len(password.encode('utf-8'))
+    if password_bytes > 72:
+        return False, f"Password is too long. Please use a shorter password (max 72 bytes, current: {password_bytes} bytes)"
     return True, ""
 
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)

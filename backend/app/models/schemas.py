@@ -10,14 +10,34 @@ from uuid import UUID
 class UserCreate(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)
     full_name: Optional[str] = None
     location: Optional[str] = None
     phone: Optional[str] = None
 
+     
+    @validator('password')
+    def validate_password_length(cls, v):
+        """Validate password doesn't exceed bcrypt's 72-byte limit"""
+        password_bytes = len(v.encode('utf-8'))
+        if password_bytes > 72:
+            raise ValueError(f'Password is too long. Maximum 72 bytes allowed (current: {password_bytes} bytes)')
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+    @validator('password')
+    def validate_password_length(cls, v):
+        """Validate password doesn't exceed bcrypt's 72-byte limit"""
+        password_bytes = len(v.encode('utf-8'))
+        if password_bytes > 72:
+            raise ValueError(f'Password is too long. Maximum 72 bytes allowed (current: {password_bytes} bytes)')
+        return v
 
 class UserResponse(BaseModel):
     id: UUID
