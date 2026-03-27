@@ -339,3 +339,32 @@ class PlatformMessageCreate(BaseModel):
     message: str
     message_type: str = "info"
     expires_at: Optional[datetime] = None
+
+
+
+
+
+# =====================================================
+# REPORT SCHEMAS
+# =====================================================
+
+class ReportCreate(BaseModel):
+    reported_entity_type: str  # 'task', 'user', 'skill_exchange', 'session'
+    reported_entity_id: UUID
+    reason: str  # Category of report
+    description: str  # Detailed description
+    screenshots: Optional[List[str]] = None
+
+class ReportResponse(BaseModel):
+    id: UUID
+    reporter_id: UUID
+    reported_entity_type: str
+    reported_entity_id: UUID
+    reason: str
+    description: str
+    status: str  # 'pending', 'under_review', 'resolved', 'dismissed'
+    created_at: datetime
+
+class ReportUpdate(BaseModel):
+    status: str  # 'under_review', 'resolved', 'dismissed'
+    admin_notes: Optional[str] = None

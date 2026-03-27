@@ -250,3 +250,141 @@ async def create_platform_message(message_data: PlatformMessageCreate, current_a
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
+
+
+
+@router.get("/skill-exchanges")
+async def get_all_skill_exchanges(current_admin_id: str = Depends(get_current_admin_user)):
+    """Get all skill exchange tasks for monitoring"""
+    try:
+        db = get_db()
+        
+        exchanges_result = db.table('skill_exchange_tasks').select('*').order('created_at', desc=True).execute()
+        
+        return exchanges_result.data if exchanges_result.data else []
+    
+    except Exception as e:
+        logger.error(f"Error fetching skill exchanges: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/transactions")
+async def get_all_transactions(current_admin_id: str = Depends(get_current_admin_user)):
+    """Get all payment transactions for monitoring"""
+    try:
+        db = get_db()
+        
+        payments_result = db.table('payments').select('*').order('created_at', desc=True).execute()
+        
+        if not payments_result.data:
+            return []
+        
+        # Get user details for payers and payees
+        user_ids = list(set([p['payer_id'] for p in payments_result.data if p.get('payer_id')] + 
+                           [p['payee_id'] for p in payments_result.data if p.get('payee_id')]))
+        users_result = db.table('users').select('id, username, email, full_name').in_('id', user_ids).execute()
+        
+        users_dict = {user['id']: user for user in (users_result.data or [])}
+        
+        # Combine payment data with user details
+        transactions = []
+        for payment in payments_result.data:
+            transactions.append({
+                **payment,
+                'payer': users_dict.get(payment['payer_id']),
+                'payee': users_dict.get(payment['payee_id'])
+            })
+        
+        return transactions
+    
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str, current_admin_id: str = Depends(get_current_admin_user)):
+    """Delete a task (Admin only)"""
+    try:
+        db = get_db()
+        
+        # Get task before deleting
+        task_result = db.table('tasks').select('*').eq('id', task_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        task = task_result.data[0]
+        
+        # Delete task
+        db.table('tasks').delete().eq('id', task_id).execute()
+        
+        # Notify task creator
+        db.table('notifications').insert({
+            'user_id': task['creator_id'],
+            'title': 'Task Removed by Admin',
+            'message': f'Your task "{task["title"]}" has been removed by the admin team.',
+            'notification_type': 'admin_action',
+            'reference_id': task_id,
+            'reference_type': 'task'
+        }).execute()
+        
+        return {"message": "Task deleted successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting task: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.delete("/skill-exchanges/{exchange_id}")
+async def delete_skill_exchange(exchange_id: str, current_admin_id: str = Depends(get_current_admin_user)):
+    """Delete a skill exchange task (Admin only)"""
+    try:
+        db = get_db()
+        
+        # Get exchange before deleting
+        exchange_result = db.table('skill_exchange_tasks').select('*').eq('id', exchange_id).execute()
+        
+        if not exchange_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Skill exchange not found"
+            )
+        
+        exchange = exchange_result.data[0]
+        
+        # Delete exchange
+        db.table('skill_exchange_tasks').delete().eq('id', exchange_id).execute()
+        
+        # Notify creator
+        db.table('notifications').insert({
+            'user_id': exchange['creator_id'],
+            'title': 'Skill Exchange Removed by Admin',
+            'message': f'Your skill exchange post has been removed by the admin team.',
+            'notification_type': 'admin_action',
+            'reference_id': exchange_id,
+            'reference_type': 'skill_exchange'
+        }).execute()
+        
+        return {"message": "Skill exchange deleted successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting skill exchange: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

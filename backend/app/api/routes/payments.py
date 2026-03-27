@@ -127,11 +127,10 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-
 @router.post("/verify")
 async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = Depends(get_current_user)):
 
-    """Verify Razorpay payment"""
+    """Verify Razorpay payment and handle task creation payments"""
     try:
         db = get_db()
         
@@ -160,9 +159,34 @@ async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = D
         if not result.data:
             raise HTTPException(status_code=404, detail="Payment record not found")
         
+        payment = result.data[0]
+        
+        # If this is a task creation payment, make the task visible
+        if payment.get('payment_type') == 'task_creation':
+            task_id = payment.get('task_id')
+            if task_id:
+                db.table('tasks').update({
+                    'status': 'open',
+                    'is_visible': True,
+                    'payment_status': 'paid'
+                }).eq('id', task_id).execute()
+                
+                # Notify task creator
+                db.table('notifications').insert({
+                    'user_id': current_user_id,
+                    'title': 'Task Payment Successful',
+                    'message': f'Your task payment has been confirmed. Your task is now visible to all users.',
+                    'notification_type': 'payment_success',
+                    'reference_id': task_id,
+                    'reference_type': 'task'
+                }).execute()
+                
+                logger.info(f"Task {task_id} is now visible after payment verification")
+        
         return {
             "message": "Payment verified successfully",
-            "status": "completed"
+            "status": "completed",
+            "payment_type": payment.get('payment_type')
         }
     
     except HTTPException:
@@ -173,7 +197,6 @@ async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = D
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-
 @router.post("/release/{payment_id}")
 async def release_payment(payment_id: str, current_user_id: str = Depends(get_current_user)):
     """Release escrowed payment to payee"""

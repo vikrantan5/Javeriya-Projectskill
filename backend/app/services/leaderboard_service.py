@@ -24,6 +24,7 @@ class LeaderboardService:
         """
         Update leaderboard for a specific category
         Categories: 'top_mentor', 'top_learner', 'top_contributor'
+        Scoring includes: tasks completed, skill exchanges completed, on-time completion, user rating
         """
         try:
             db = get_db()
@@ -32,75 +33,56 @@ class LeaderboardService:
             # Delete existing entries for this week and category
             db.table('leaderboard_entries').delete().eq('category', category).eq('week_start_date', str(week_start)).execute()
             
-            if category == 'top_mentor':
-                # Get top mentors based on sessions completed this week
-                query = f"""
-                SELECT 
-                    u.id as user_id,
-                    COUNT(ls.id) as weekly_sessions,
-                    AVG(u.average_rating) as avg_rating,
-                    u.total_sessions
-                FROM users u
-                INNER JOIN learning_sessions ls ON u.id = ls.mentor_id
-                WHERE ls.status = 'completed'
-                  AND ls.created_at >= '{week_start}'
-                  AND ls.created_at <= '{week_end}'
-                GROUP BY u.id
-                ORDER BY weekly_sessions DESC, avg_rating DESC
-                LIMIT {limit}
-                """
-                
-            elif category == 'top_learner':
-                # Get top learners based on sessions attended and tasks completed
-                query = f"""
-                SELECT 
-                    u.id as user_id,
-                    COUNT(DISTINCT ls.id) + COUNT(DISTINCT t.id) as activity_score,
-                    u.total_sessions
-                FROM users u
-                LEFT JOIN learning_sessions ls ON u.id = ls.learner_id AND ls.status = 'completed'
-                LEFT JOIN tasks t ON u.id = t.acceptor_id AND t.status = 'completed'
-                WHERE (ls.created_at >= '{week_start}' OR t.created_at >= '{week_start}')
-                GROUP BY u.id
-                ORDER BY activity_score DESC
-                LIMIT {limit}
-                """
-                
-            elif category == 'top_contributor':
-                # Get top contributors based on overall platform engagement
-                query = f"""
-                SELECT 
-                    u.id as user_id,
-                    (u.total_sessions * 2 + u.total_tasks_completed * 3 + u.total_ratings) as contribution_score
-                FROM users u
-                ORDER BY contribution_score DESC
-                LIMIT {limit}
-                """
-            else:
-                return
+            # Get all users with their stats
+            users_result = db.table('users').select('id, username, total_sessions, average_rating, total_tasks_completed, total_ratings, total_skill_exchanges_completed').order('total_sessions', desc=True).limit(limit).execute()
             
-            # Execute query (Note: Using Supabase RPC or direct SQL)
-            # For now, we'll use a simplified approach with existing data
-            users_result = db.table('users').select('id, username, total_sessions, average_rating, total_tasks_completed, total_ratings').order('total_sessions', desc=True).limit(limit).execute()
-            
-            # Insert leaderboard entries
+            # Calculate scores based on category
             entries = []
-            for rank, user in enumerate(users_result.data, 1):
-                score = user.get('total_sessions', 0) * 2 + user.get('total_tasks_completed', 0) * 3
+            for rank, user in enumerate(users_result.data if users_result.data else [], 1):
+                if category == 'top_mentor':
+                    # Mentors scored on sessions + rating + skill exchanges
+                    score = (
+                        user.get('total_sessions', 0) * 3 + 
+                        user.get('average_rating', 0) * 10 +
+                        user.get('total_skill_exchanges_completed', 0) * 2
+                    )
+                elif category == 'top_learner':
+                    # Learners scored on tasks completed + sessions + skill exchanges
+                    score = (
+                        user.get('total_tasks_completed', 0) * 5 + 
+                        user.get('total_sessions', 0) * 2 +
+                        user.get('total_skill_exchanges_completed', 0) * 3
+                    )
+                elif category == 'top_contributor':
+                    # Overall contribution score
+                    score = (
+                        user.get('total_sessions', 0) * 2 + 
+                        user.get('total_tasks_completed', 0) * 3 + 
+                        user.get('total_ratings', 0) +
+                        user.get('total_skill_exchanges_completed', 0) * 2 +
+                        user.get('average_rating', 0) * 5
+                    )
+                else:
+                    continue
                 
                 entries.append({
                     'user_id': user['id'],
                     'category': category,
-                    'score': score,
+                    'score': int(score),
                     'rank': rank,
                     'week_start_date': str(week_start),
                     'week_end_date': str(week_end)
                 })
             
+            # Re-sort by score and update ranks
+            entries.sort(key=lambda x: x['score'], reverse=True)
+            for rank, entry in enumerate(entries, 1):
+                entry['rank'] = rank
+            
             if entries:
                 db.table('leaderboard_entries').insert(entries).execute()
             
-            logger.info(f"Updated leaderboard for {category}")
+            logger.info(f"Updated leaderboard for {category} with {len(entries)} entries")
             
         except Exception as e:
             logger.error(f"Error updating leaderboard: {str(e)}")
@@ -122,16 +104,16 @@ class LeaderboardService:
             
             leaderboard = []
             if result.data:
- # Get user details including trust_score
+                # Get user details including skill exchanges
                 user_ids = [entry['user_id'] for entry in result.data]
-                users_result = db.table('users').select('id, username, full_name, profile_photo, average_rating, total_sessions, trust_score').in_('id', user_ids).execute()
+                users_result = db.table('users').select('id, username, full_name, profile_photo, average_rating, total_sessions, trust_score, total_tasks_completed, total_skill_exchanges_completed').in_('id', user_ids).execute()
                 
-                users_dict = {user['id']: user for user in users_result.data}
+                users_dict = {user['id']: user for user in (users_result.data or [])}
                 
                 for entry in result.data:
                     user = users_dict.get(entry['user_id'])
                     if user:
-                       leaderboard.append({
+                        leaderboard.append({
                             'rank': entry['rank'],
                             'user_id': entry['user_id'],
                             'username': user['username'],
@@ -142,7 +124,9 @@ class LeaderboardService:
                             'category': entry['category'],
                             'stats': {
                                 'total_sessions': user.get('total_sessions', 0),
-                                'average_rating': user.get('average_rating', 0)
+                                'average_rating': user.get('average_rating', 0),
+                                'total_tasks_completed': user.get('total_tasks_completed', 0),
+                                'total_skill_exchanges_completed': user.get('total_skill_exchanges_completed', 0)
                             }
                         })
             

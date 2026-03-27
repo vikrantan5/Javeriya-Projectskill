@@ -61,6 +61,7 @@ class SkillExchangeSessionCreate(BaseModel):
     exchange_task_id: str
     meeting_date: str
     meeting_topic: str
+    meeting_link: str  # Manual Google Meet link
     meeting_duration_minutes: int = 60
 
 @router.post("/skill-exchange-session", response_model=dict)
@@ -68,7 +69,7 @@ async def create_skill_exchange_session(
     session_data: SkillExchangeSessionCreate,
     current_user_id: str = Depends(get_current_user)
 ):
-    """Create a skill exchange session with Google Meet scheduling"""
+    """Create a skill exchange session with manual Google Meet link"""
     try:
         db = get_db()
         
@@ -90,7 +91,7 @@ async def create_skill_exchange_session(
         if not participant2_id:
             raise HTTPException(status_code=400, detail="Exchange not matched yet")
         
-        # Get participant details (emails for calendar invites)
+        # Get participant details
         participant1_result = db.table('users').select('email, username, full_name').eq('id', participant1_id).execute()
         participant2_result = db.table('users').select('email, username, full_name').eq('id', participant2_id).execute()
         
@@ -100,8 +101,6 @@ async def create_skill_exchange_session(
         participant1 = participant1_result.data[0]
         participant2 = participant2_result.data[0]
         
-        participant1_email = participant1.get('email')
-        participant2_email = participant2.get('email')
         participant1_name = participant1.get('full_name') or participant1.get('username')
         participant2_name = participant2.get('full_name') or participant2.get('username')
         
@@ -118,41 +117,7 @@ async def create_skill_exchange_session(
             logger.error(f"Invalid date format: {session_data.meeting_date}")
             raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
         
-        # Import Google Calendar service
-        from app.services.google_calendar_service import google_calendar_service
-        
-        # Create Google Calendar event with Meet link
-        event_summary = f"TalentConnect: {session_data.meeting_topic}"
-        event_description = f"""
-Skill Exchange Session between {participant1_name} and {participant2_name}
-
-Skills being exchanged:
-• {task.get('skill_offered', 'N/A')} ↔ {task.get('skill_requested', 'N/A')}
-
-This is an automatically scheduled meeting via TalentConnect.
-Both participants will receive calendar invitations with the Google Meet link.
-
-Duration: {session_data.meeting_duration_minutes} minutes
-        """.strip()
-        
-        # Create the calendar event
-        calendar_result = google_calendar_service.create_meeting_event(
-            summary=event_summary,
-            description=event_description,
-            start_datetime=meeting_datetime,
-            duration_minutes=session_data.meeting_duration_minutes,
-            attendee_emails=[participant1_email, participant2_email],
-            timezone='UTC'
-        )
-        
-        if not calendar_result.get('success'):
-            logger.error(f"Failed to create Google Calendar event: {calendar_result.get('error')}")
-            raise HTTPException(status_code=500, detail="Failed to create calendar event")
-        
-        meeting_link = calendar_result.get('meeting_link')
-        google_event_id = calendar_result.get('event_id')
-        
-        # Create session record with the actual Google Meet link
+        # Create session record with manual meeting link
         new_session = {
             'exchange_task_id': session_data.exchange_task_id,
             'participant1_id': participant1_id,
@@ -160,8 +125,7 @@ Duration: {session_data.meeting_duration_minutes} minutes
             'meeting_date': session_data.meeting_date,
             'meeting_duration_minutes': session_data.meeting_duration_minutes,
             'meeting_topic': session_data.meeting_topic,
-            'meeting_link': meeting_link,
-            'google_event_id': google_event_id,
+            'meeting_link': session_data.meeting_link,  # Use the provided manual link
             'status': 'scheduled',
             'created_by': current_user_id
         }
@@ -171,32 +135,24 @@ Duration: {session_data.meeting_duration_minutes} minutes
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create session")
         
-        # Send email notifications to both participants using SendGrid
-        from app.services.email_service import send_session_scheduled_email
+        # Send notifications to both participants
+        db.table('notifications').insert({
+            'user_id': participant1_id,
+            'title': 'Skill Exchange Session Scheduled',
+            'message': f'A skill exchange session has been scheduled with {participant2_name}. Topic: {session_data.meeting_topic}',
+            'notification_type': 'session_scheduled',
+            'reference_id': result.data[0]['id'],
+            'reference_type': 'skill_exchange_session'
+        }).execute()
         
-        try:
-            # Send to participant 1
-            send_session_scheduled_email(
-                to_email=participant1_email,
-                to_name=participant1_name,
-                meeting_topic=session_data.meeting_topic,
-                meeting_date=session_data.meeting_date,
-                meeting_link=meeting_link,
-                other_participant_name=participant2_name
-            )
-            
-            # Send to participant 2
-            send_session_scheduled_email(
-                to_email=participant2_email,
-                to_name=participant2_name,
-                meeting_topic=session_data.meeting_topic,
-                meeting_date=session_data.meeting_date,
-                meeting_link=meeting_link,
-                other_participant_name=participant1_name
-            )
-        except Exception as email_error:
-            logger.warning(f"Failed to send email notifications: {str(email_error)}")
-            # Don't fail the request if email fails
+        db.table('notifications').insert({
+            'user_id': participant2_id,
+            'title': 'Skill Exchange Session Scheduled',
+            'message': f'A skill exchange session has been scheduled with {participant1_name}. Topic: {session_data.meeting_topic}',
+            'notification_type': 'session_scheduled',
+            'reference_id': result.data[0]['id'],
+            'reference_type': 'skill_exchange_session'
+        }).execute()
         
         # Create in-app notifications for both participants
         db.table('notifications').insert({
@@ -217,11 +173,11 @@ Duration: {session_data.meeting_duration_minutes} minutes
             'reference_type': 'skill_exchange_session'
         }).execute()
         
+        
         return {
-            "message": "Session scheduled successfully! Both participants will receive calendar invitations via email.",
+            "message": "Session scheduled successfully!",
             "session": result.data[0],
-            "meeting_link": meeting_link,
-            "google_event_id": google_event_id
+            "meeting_link": session_data.meeting_link
         }
         
     except HTTPException:
@@ -267,6 +223,71 @@ async def get_skill_exchange_sessions(current_user_id: str = Depends(get_current
         logger.error(f"Error fetching skill exchange sessions: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+
+
+@router.post("/skill-exchange-session/{session_id}/complete")
+async def mark_skill_exchange_complete(
+    session_id: str,
+    current_user_id: str = Depends(get_current_user)
+):
+    """Mark skill exchange session as completed by participant"""
+    try:
+        db = get_db()
+        
+        # Get session
+        session_result = db.table('skill_exchange_sessions').select('*').eq('id', session_id).execute()
+        if not session_result.data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session = session_result.data[0]
+        
+        # Verify user is a participant
+        if current_user_id not in [session['participant1_id'], session['participant2_id']]:
+            raise HTTPException(status_code=403, detail="You are not a participant in this session")
+        
+        # Determine which participant is marking complete
+        if current_user_id == session['participant1_id']:
+            completion_field = 'participant1_completed'
+            other_participant_id = session['participant2_id']
+        else:
+            completion_field = 'participant2_completed'
+            other_participant_id = session['participant1_id']
+        
+        # Update completion status
+        update_data = {completion_field: True}
+        
+        # Check if both have completed
+        other_completion_field = 'participant2_completed' if completion_field == 'participant1_completed' else 'participant1_completed'
+        both_completed = session.get(other_completion_field, False)
+        
+        if both_completed:
+            update_data['status'] = 'completed'
+        
+        db.table('skill_exchange_sessions').update(update_data).eq('id', session_id).execute()
+        
+        # Notify other participant
+        db.table('notifications').insert({
+            'user_id': other_participant_id,
+            'title': 'Skill Exchange Session Marked Complete',
+            'message': f'Your partner has marked the skill exchange session as complete.',
+            'notification_type': 'session_complete',
+            'reference_id': session_id,
+            'reference_type': 'skill_exchange_session'
+        }).execute()
+        
+        return {
+            "message": "Session marked as complete",
+            "both_completed": both_completed,
+            "session_id": session_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error marking session complete: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/meeting-providers")
 async def get_meeting_providers(current_user_id: str = Depends(get_current_user)):
