@@ -57,7 +57,8 @@ const SkillExchangeMarketplace = () => {
   const [meetingForm, setMeetingForm] = useState({
     meeting_date: '',
     meeting_topic: '',
-    meeting_duration_minutes: 60
+   meeting_duration_minutes: 60,
+    meeting_link: ''  // Add Google Meet link field
   });
 
 
@@ -127,7 +128,8 @@ const SkillExchangeMarketplace = () => {
     setMeetingForm({
       meeting_date: '',
       meeting_topic: `${task.skill_offered} ↔ ${task.skill_requested} Session`,
-      meeting_duration_minutes: 60
+      meeting_duration_minutes: 60,
+      meeting_link: ''  // Reset Google Meet link
     });
     setShowMeetingModal(true);
   };
@@ -140,7 +142,8 @@ const SkillExchangeMarketplace = () => {
         meetingTask.id,
         meetingForm.meeting_date,
         meetingForm.meeting_topic,
-        meetingForm.meeting_duration_minutes
+        meetingForm.meeting_duration_minutes,
+        meetingForm.meeting_link  // Pass Google Meet link
       );
       showToast('Meeting scheduled successfully!');
       setShowMeetingModal(false);
@@ -413,6 +416,25 @@ const SkillExchangeMarketplace = () => {
                   <option value={90}>90 minutes</option>
                   <option value={120}>120 minutes</option>
                 </select>
+              </div>
+
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Google Meet Link *
+                </label>
+                <input
+                  type="url"
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                  value={meetingForm.meeting_link}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, meeting_link: e.target.value })}
+                  data-testid="meeting-link-input"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Create a Google Meet link and paste it here
+                </p>
               </div>
 
               <div className="flex gap-3 pt-4">

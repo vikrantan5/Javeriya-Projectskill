@@ -175,7 +175,9 @@ const TaskMarketplace = () => {
   };
 
   const handlePaymentSuccess = () => {
-    showNotification('Payment successful! Funds are held in escrow.', 'success');
+ showNotification('Payment successful! Your task is now published.', 'success');
+    setPaymentModal(false);
+    setPaymentTask(null);
     loadTasks();
   };
 
@@ -238,9 +240,16 @@ attachment_urls: uploadedFileUrls,
       };
         console.log('Submitting task data:', taskDataToSubmit);
 
-      await taskService.createTask(taskDataToSubmit);
-      showNotification('Task created successfully!', 'success');
+      const result = await taskService.createTask(taskDataToSubmit);
+      showNotification('Task created successfully! Please make payment to publish.', 'success');
       setShowCreateTask(false);
+      
+      // Open payment modal for the newly created task
+      if (result && result.task) {
+        setPaymentTask(result.task);
+        setPaymentModal(true);
+      }
+      
       setNewTask({
         title: '',
         description: '',
@@ -366,8 +375,8 @@ attachment_urls: uploadedFileUrls,
     });
   };
 
-  const handlePayEscrow = async () => {
-    if (!selectedTask) return;
+   const handlePayEscrow = async () => {
+    if (!paymentTask) return;
     setPaymentLoading(true);
     try {
       const scriptReady = await loadRazorpayScript();
@@ -377,14 +386,14 @@ attachment_urls: uploadedFileUrls,
       }
 
       const keyResponse = await paymentService.getRazorpayKey();
-      const order = await paymentService.createOrder(selectedTask.id, selectedTask.price, selectedTask.currency || 'INR');
+      const order = await paymentService.createOrder(paymentTask.id, paymentTask.price, paymentTask.currency || 'INR');
 
       const options = {
         key: keyResponse.key_id,
         amount: order.amount,
         currency: order.currency,
         name: 'TalentConnect',
-        description: `Escrow for ${selectedTask.title}`,
+        description: `Escrow for ${paymentTask.title}`,
         order_id: order.order_id,
         handler: async (response) => {
           try {
@@ -393,8 +402,9 @@ attachment_urls: uploadedFileUrls,
               response.razorpay_payment_id,
               response.razorpay_signature
             );
-            showNotification('Escrow payment completed successfully', 'success');
+            showNotification('Payment completed successfully! Your task is now published.', 'success');
             setPaymentModal(false);
+            setPaymentTask(null);
             loadTasks();
           } catch (error) {
             showNotification('Payment verification failed', 'error');
@@ -438,6 +448,7 @@ attachment_urls: uploadedFileUrls,
 
   const getStatusColor = (status) => {
     switch(status) {
+      case 'pending_payment': return 'bg-yellow-100 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'open': return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400';
       case 'accepted': return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400';
       case 'in_progress': return 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400';
@@ -837,6 +848,20 @@ attachment_urls: uploadedFileUrls,
                       </div>
 
                       {/* Action Button */}
+                       {task.status === 'pending_payment' && task.creator_id === user?.id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPaymentTask(task);
+                            setPaymentModal(true);
+                          }}
+                          className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all shadow-md shadow-yellow-600/25 text-sm flex items-center gap-2"
+                          data-testid="pay-now-button"
+                        >
+                          <Wallet className="w-4 h-4" />
+                          Pay Now
+                        </button>
+                      )}
                        {task.status === 'open' && task.creator_id !== user?.id && (
                         <button
                           onClick={(e) => {
@@ -1182,6 +1207,20 @@ attachment_urls: uploadedFileUrls,
 
                                 {/* Action Buttons */}
                 <div className="space-y-3">
+                   {/* Payment Button - For task creator when task needs payment */}
+                  {selectedTask.status === 'pending_payment' && selectedTask.creator_id === user?.id && (
+                    <button
+                      onClick={() => {
+                        setPaymentModal(true);
+                        setShowTaskDetails(false);
+                      }}
+                      className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 text-white py-3 rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all shadow-lg shadow-yellow-600/25 flex items-center justify-center gap-2"
+                      data-testid="pay-now-modal-button"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      Pay Now to Publish Task
+                    </button>
+                  )}
                   {/* View Applicants - Only for task creator when task is open */}
                   {selectedTask.status === 'open' && selectedTask.creator_id === user?.id && (
                     <button
@@ -1477,13 +1516,13 @@ attachment_urls: uploadedFileUrls,
             </div>
           </div>
         )}
-         {paymentModal && selectedTask && (
+         {paymentModal && paymentTask && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPaymentModal(false)} data-testid="escrow-payment-modal">
             <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="relative h-24 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-t-2xl p-6">
                 <div className="absolute inset-0 bg-black/20 rounded-t-2xl"></div>
                 <div className="relative flex justify-between items-start">
-                  <h2 className="text-2xl font-bold text-white">Fund Escrow</h2>
+                  <h2 className="text-2xl font-bold text-white">Pay to Publish Task</h2>
                   <button
                     onClick={() => setPaymentModal(false)}
                     className="p-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition-colors"
@@ -1497,8 +1536,8 @@ attachment_urls: uploadedFileUrls,
               <div className="p-6 space-y-5">
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Task</p>
-                  <p className="font-semibold text-gray-900 dark:text-white" data-testid="escrow-task-title">{selectedTask.title}</p>
-                  <p className="text-2xl font-bold text-indigo-600 mt-2" data-testid="escrow-payment-amount">₹{selectedTask.price}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white" data-testid="escrow-task-title">{paymentTask.title}</p>
+                  <p className="text-2xl font-bold text-indigo-600 mt-2" data-testid="escrow-payment-amount">₹{paymentTask.price}</p>
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-300" data-testid="escrow-payment-note">

@@ -101,12 +101,13 @@ export const sessionService = {
     return response.data;
   },
 
-   createSkillExchangeSession: async (exchangeTaskId, meetingDate, meetingTopic, meetingDurationMinutes = 60) => {
+   createSkillExchangeSession: async (exchangeTaskId, meetingDate, meetingTopic, meetingDurationMinutes = 60, meetingLink = '') => {
     const response = await api.post('/api/sessions/skill-exchange-session', {
       exchange_task_id: exchangeTaskId,
       meeting_date: meetingDate,
       meeting_topic: meetingTopic,
-      meeting_duration_minutes: meetingDurationMinutes
+      meeting_duration_minutes: meetingDurationMinutes,
+      meeting_link: meetingLink
     });
     return response.data;
   },
