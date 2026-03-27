@@ -29,13 +29,14 @@ def utc_now_iso() -> str:
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_current_user)):
-    """Create a new task"""
+    """Create a new task (requires upfront payment to be visible)"""
     try:
         # Debug logging
         logger.info(f"Received task creation request: {task_data.model_dump()}")
         db = get_db()
         
             # Create task (use only safe core fields; add optional fields conditionally)
+        # Task starts as invisible until payment is made
         new_task = {
             'creator_id': current_user_id,
             'title': task_data.title,
@@ -43,8 +44,9 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
             'price': float(task_data.price),
             'currency': 'INR',
             'deadline': task_data.deadline.isoformat(),
-            'status': 'open',
-            'payment_status': 'unpaid'
+            'status': 'pending_payment',  # Changed from 'open'
+            'payment_status': 'unpaid',
+            'is_visible': False  # Hidden until payment
         }
         if task_data.subject:
             new_task['subject'] = task_data.subject
@@ -92,12 +94,12 @@ async def create_task(task_data: TaskCreate, current_user_id: str = Depends(get_
 
 @router.get("/", response_model=List[dict])
 async def get_all_tasks(status: str = "open", current_user_id: str = Depends(get_current_user)):
-    """Get all tasks with optional status filter"""
+    """Get all tasks with optional status filter - only visible tasks"""
     try:
         db = get_db()
         
-        # Get tasks excluding current user's tasks
-        query = db.table('tasks').select('*').neq('creator_id', current_user_id)
+        # Get tasks excluding current user's tasks and only visible ones
+        query = db.table('tasks').select('*').neq('creator_id', current_user_id).eq('is_visible', True)
         
         if status:
             query = query.eq('status', status)

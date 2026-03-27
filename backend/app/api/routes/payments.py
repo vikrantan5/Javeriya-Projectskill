@@ -48,7 +48,7 @@ async def get_task_payment_status(task_id: str, current_user_id: str = Depends(g
 
 @router.post("/create-order", response_model=dict)
 async def create_payment_order(payment_data: PaymentCreate, current_user_id: str = Depends(get_current_user)):
-    """Create a Razorpay order for task payment"""
+    """Create a Razorpay order for task payment (creation or completion)"""
     try:
         db = get_db()
         
@@ -63,19 +63,33 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
         
         task = task_result.data[0]
         
-        # Verify user is the creator
-        if task['creator_id'] != current_user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only task creator can create payment"
-            )
+        # Two scenarios:
+        # 1. Task creator paying upfront (task status = pending_payment)
+        # 2. Task creator paying for accepted task (task has acceptor)
+        
+        is_creation_payment = task['status'] == 'pending_payment'
+        
+        if is_creation_payment:
+            # Verify user is the creator
+            if task['creator_id'] != current_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only task creator can pay for task creation"
+                )
+        else:
+            # Verify user is the creator
+            if task['creator_id'] != current_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only task creator can create payment"
+                )
 
-
-        if not task.get('acceptor_id'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Task must be accepted before creating payment"
-            )  
+            if not task.get('acceptor_id'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Task must be accepted before creating payment"
+                )
+        
         # Create Razorpay order
         order = payment_service.create_order(
             amount=payment_data.amount,
@@ -86,12 +100,13 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
         new_payment = {
             'task_id': str(payment_data.task_id),
             'payer_id': current_user_id,
-            'payee_id': task.get('acceptor_id'),
+            'payee_id': task.get('acceptor_id'),  # Will be None for creation payment
             'amount': payment_data.amount,
             'currency': payment_data.currency,
             'razorpay_order_id': order['id'],
             'status': 'pending',
-            'is_escrowed': True
+            'is_escrowed': True,
+            'payment_type': 'task_creation' if is_creation_payment else 'task_completion'
         }
         
         payment_result = db.table('payments').insert(new_payment).execute()
@@ -100,7 +115,8 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
             "order_id": order['id'],
             "amount": order['amount'],
             "currency": order['currency'],
-            "payment_id": payment_result.data[0]['id'] if payment_result.data else None
+            "payment_id": payment_result.data[0]['id'] if payment_result.data else None,
+            "payment_type": 'task_creation' if is_creation_payment else 'task_completion'
         }
     
     except HTTPException:
