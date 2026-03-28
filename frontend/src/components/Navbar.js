@@ -159,7 +159,7 @@ const Navbar = () => {
 
                  {/* Right Section */}
           <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
-            {/* Browse Users Button */}
+            {/* Browse Users Button
             <button
               onClick={() => setShowBrowseUsers(true)}
               className="hidden md:flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
@@ -168,7 +168,7 @@ const Navbar = () => {
               <Users className="w-4 h-4" />
               <span className="text-xs lg:text-sm font-medium hidden lg:inline">Users</span>
               <span className="text-xs lg:text-sm font-medium lg:hidden">Browse</span>
-            </button>
+            </button> */}
             {/* Quick Actions */}
             <div className="hidden md:flex items-center gap-1">
               {quickActions.map((action, index) => {

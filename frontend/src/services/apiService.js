@@ -39,6 +39,11 @@ export const skillService = {
     return response.data;
   },
 
+
+    updateSkill: async (skillId, skillData) => {
+    const response = await api.put(`/api/skills/${skillId}`, skillData);
+    return response.data;
+  },
   searchSkills: async (skillName, skillType = 'offered') => {
     const response = await api.get(`/api/skills/search?skill_name=${encodeURIComponent(skillName)}&skill_type=${skillType}`);
     return response.data;
@@ -46,6 +51,19 @@ export const skillService = {
 
   getUserSkills: async (userId) => {
     const response = await api.get(`/api/skills/user/${userId}`);
+    return response.data;
+  },
+   getRecommendations: async () => {
+    const response = await api.get('/api/skills/recommendations');
+    return response.data;
+  },
+
+  addRecommendedSkill: async (skillName) => {
+    const response = await api.post('/api/skills/', {
+      skill_name: skillName,
+      skill_type: 'wanted',
+      skill_level: 'beginner'
+    });
     return response.data;
   },
 };
@@ -566,6 +584,33 @@ export const realtimeService = {
   },
 };
 
+
+
+// ============================================
+// MENTOR SERVICE
+// ============================================
+export const mentorService = {
+  findMentors: async (skillName, limit = 10) => {
+    const response = await api.get(`/api/mentors/find/${encodeURIComponent(skillName)}?limit=${limit}`);
+    return response.data;
+  },
+
+  getRecommendations: async (limit = 5) => {
+    const response = await api.get(`/api/mentors/recommendations?limit=${limit}`);
+    return response.data;
+  },
+
+  requestMentor: async (mentorId, skillName, message = '') => {
+    const response = await api.post('/api/mentors/request', null, {
+      params: {
+        mentor_id: mentorId,
+        skill_name: skillName,
+        message: message
+      }
+    });
+    return response.data;
+  },
+};
 
 // ============================================
 // DASHBOARD SERVICE

@@ -31,6 +31,9 @@ async def add_skill(skill_data: SkillCreate, current_user_id: str = Depends(get_
             'skill_name': skill_data.skill_name,
             'skill_type': skill_data.skill_type,
             'skill_level': skill_data.skill_level,
+            'description': skill_data.description if hasattr(skill_data, 'description') else None,
+            'years_experience': skill_data.years_experience if hasattr(skill_data, 'years_experience') else None,
+            'hourly_rate': skill_data.hourly_rate if hasattr(skill_data, 'hourly_rate') else None,
             'is_verified': False
         }
         
@@ -234,6 +237,48 @@ async def delete_skill(skill_id: str, current_user_id: str = Depends(get_current
             detail=str(e)
         )
 
+
+@router.put("/{skill_id}")
+async def update_skill(skill_id: str, skill_data: SkillCreate, current_user_id: str = Depends(get_current_user)):
+    """Update a skill"""
+    try:
+        db = get_db()
+        
+        # Verify skill belongs to user
+        skill_result = db.table('user_skills').select('*').eq('id', skill_id).eq('user_id', current_user_id).execute()
+        
+        if not skill_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Skill not found or doesn't belong to you"
+            )
+        
+        # Update skill
+        update_data = {
+            'skill_name': skill_data.skill_name,
+            'skill_type': skill_data.skill_type,
+            'skill_level': skill_data.skill_level,
+            'description': skill_data.description if hasattr(skill_data, 'description') else None,
+            'years_experience': skill_data.years_experience if hasattr(skill_data, 'years_experience') else None,
+            'hourly_rate': skill_data.hourly_rate if hasattr(skill_data, 'hourly_rate') else None,
+        }
+        
+        result = db.table('user_skills').update(update_data).eq('id', skill_id).execute()
+        
+        return {
+            "message": "Skill updated successfully",
+            "skill": result.data[0] if result.data else None
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating skill: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @router.get("/user/{user_id}", response_model=List[SkillResponse])
 async def get_user_skills(user_id: str):
     """Get all skills for a specific user"""
@@ -246,6 +291,70 @@ async def get_user_skills(user_id: str):
     
     except Exception as e:
         logger.error(f"Error fetching user skills: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    
+
+@router.get("/recommendations", response_model=List[dict])
+async def get_skill_recommendations(current_user_id: str = Depends(get_current_user)):
+    """Get skill recommendations based on user's existing skills"""
+    try:
+        db = get_db()
+        
+        # Get user's current skills
+        user_skills_result = db.table('user_skills').select('skill_name').eq('user_id', current_user_id).execute()
+        
+        if not user_skills_result.data:
+            # If no skills, return popular beginner skills
+            return [
+                {"skill_name": "HTML", "category": "Web Development", "description": "Foundation of web development"},
+                {"skill_name": "CSS", "category": "Web Development", "description": "Style and layout for websites"},
+                {"skill_name": "Python", "category": "Programming", "description": "Versatile programming language"},
+                {"skill_name": "JavaScript", "category": "Web Development", "description": "Interactive web programming"},
+                {"skill_name": "Git", "category": "Development Tools", "description": "Version control system"}
+            ]
+        
+        user_skills = [s['skill_name'].lower() for s in user_skills_result.data]
+        
+        # Skill recommendation mappings
+        recommendations_map = {
+            'html': ['CSS', 'JavaScript', 'React', 'Tailwind CSS'],
+            'css': ['JavaScript', 'Sass', 'Tailwind CSS', 'Bootstrap'],
+            'javascript': ['React', 'Node.js', 'TypeScript', 'Vue.js'],
+            'python': ['Django', 'Flask', 'Machine Learning', 'Data Science'],
+            'java': ['Spring Boot', 'Android Development', 'Kotlin'],
+            'c': ['C++', 'Data Structures', 'Algorithms'],
+            'c++': ['Data Structures', 'Algorithms', 'Game Development'],
+            'react': ['Next.js', 'Redux', 'TypeScript', 'GraphQL'],
+            'node.js': ['Express.js', 'MongoDB', 'PostgreSQL', 'GraphQL'],
+            'sql': ['PostgreSQL', 'MySQL', 'Database Design'],
+            'git': ['GitHub Actions', 'CI/CD', 'DevOps'],
+        }
+        
+        # Collect all recommendations
+        recommended_skills = set()
+        for skill in user_skills:
+            if skill in recommendations_map:
+                recommended_skills.update(recommendations_map[skill])
+        
+        # Remove skills user already has
+        recommended_skills = [s for s in recommended_skills if s.lower() not in user_skills]
+        
+        # Create recommendation objects
+        recommendations = []
+        for skill in list(recommended_skills)[:10]:  # Limit to 10
+            recommendations.append({
+                "skill_name": skill,
+                "category": "Recommended",
+                "description": f"Based on your existing skills"
+            })
+        
+        return recommendations
+    
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

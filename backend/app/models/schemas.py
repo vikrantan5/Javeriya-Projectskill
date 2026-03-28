@@ -86,17 +86,24 @@ class SkillCreate(BaseModel):
     skill_name: str
     skill_type: str  # 'offered' or 'wanted'
     skill_level: Optional[str] = None  # 'beginner', 'intermediate', 'advanced', 'expert'
+    description: Optional[str] = None
+    years_experience: Optional[int] = None
+    hourly_rate: Optional[float] = None
 
 class SkillResponse(BaseModel):
     id: UUID
     user_id: UUID
     skill_name: str
     skill_type: str
-    skill_level: Optional[str]
+    skill_level: Optional[str] = None
+    description: Optional[str] = None
+    years_experience: Optional[int] = None
+    hourly_rate: Optional[float] = None
     is_verified: bool
-    verification_score: Optional[int]
+    verification_score: Optional[int] = None
+    student_count: Optional[int] = None
+    average_rating: Optional[float] = None
     created_at: datetime
-
 # =====================================================
 # SESSION SCHEMAS
 # =====================================================

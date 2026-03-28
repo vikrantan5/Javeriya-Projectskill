@@ -53,6 +53,7 @@ const SkillMarketplace = () => {
   const [activeTab, setActiveTab] = useState('my-skills');
   const [mySkills, setMySkills] = useState([]);
   const [mentors, setMentors] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
   const [showAddSkill, setShowAddSkill] = useState(false);
   const [searchSkill, setSearchSkill] = useState('');
   const [newSkill, setNewSkill] = useState({
@@ -179,9 +180,35 @@ const SkillMarketplace = () => {
     setTimeout(() => setNotification({ show: false, message: '', type: '' }), 3000);
   };
 
+    const loadRecommendations = async () => {
+    try {
+      const data = await skillService.getRecommendations();
+      setRecommendations(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading recommendations:', error);
+      setRecommendations([]);
+    }
+  };
+
+  const handleAddRecommendedSkill = async (skillName) => {
+    setLoading(true);
+    try {
+      await skillService.addRecommendedSkill(skillName);
+      showNotification(`${skillName} added to your skills!`, 'success');
+      // Remove from recommendations
+      setRecommendations(recommendations.filter(r => r.skill_name !== skillName));
+      await loadMySkills();
+    } catch (error) {
+      showNotification('Failed to add skill: ' + (error.response?.data?.detail || error.message), 'error');
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (activeTab === 'my-skills') {
       loadMySkills();
+      } else if (activeTab === 'recommendations') {
+      loadRecommendations();
     }
   }, [activeTab]);
 
@@ -284,6 +311,7 @@ const SkillMarketplace = () => {
         <div className="flex space-x-4 mb-8 border-b border-gray-200 dark:border-gray-700" data-testid="skill-tabs">
           {[
             { id: 'my-skills', label: 'My Skills', icon: BookOpen },
+            { id: 'recommendations', label: 'Recommended', icon: Sparkles },
             { id: 'find-mentors', label: 'Find Mentors', icon: Compass },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -514,6 +542,79 @@ const SkillMarketplace = () => {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ===================================================================================================================================== */}
+
+        
+ {/* Recommendations Tab */}
+        {activeTab === 'recommendations' && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-600" />
+                    Recommended Skills
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">Based on your current skills</p>
+                </div>
+              </div>
+
+              {recommendations.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-24 h-24 mx-auto bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
+                    <Sparkles className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Recommendations Yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    Add some skills to get personalized recommendations!
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('my-skills')}
+                    className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium hover:gap-3 transition-all"
+                  >
+                    Add your first skill
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recommendations.map((rec, index) => (
+                    <div
+                      key={index}
+                      className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 hover:shadow-lg transition-all"
+                      data-testid="recommendation-card"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{rec.skill_name}</h3>
+                          {rec.category && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{rec.category}</p>
+                          )}
+                        </div>
+                        <Sparkles className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      
+                      {rec.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{rec.description}</p>
+                      )}
+                      
+                      <button
+                        onClick={() => handleAddRecommendedSkill(rec.skill_name)}
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all text-sm font-medium"
+                        data-testid="add-recommended-skill-button"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add to My Skills
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
