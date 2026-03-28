@@ -61,6 +61,7 @@ api_router.include_router(dashboard.router)
 api_router.include_router(ratings.router)
 api_router.include_router(wallet.router)
 api_router.include_router(reports.router)
+api_router.include_router(disputes.router)
 # Include API router in main app
 app.include_router(api_router)
 

@@ -66,7 +66,7 @@ const Navbar = () => {
      { path: '/roadmap', label: 'Roadmap', icon: Map, color: 'orange' },
       { path: '/leaderboard', label: 'Leaderboard', icon: Award, color: 'yellow' },
        { path: '/wallet', label: 'Wallet', icon: TrendingUp, color: 'emerald' },
-    { path: '/chatbot', label: 'AI Assistant', icon: Bot, color: 'pink', badge: 'New' },
+    { path: '/chatbot', label: 'AI Assistant', icon: Bot, color: 'pink'},
   ];
 
   const quickActions = [
@@ -103,7 +103,7 @@ const Navbar = () => {
             </Link>
 
                        {/* Desktop Navigation */}
-           <div className="hidden lg:flex items-center gap-0.5 xl:gap-1 overflow-x-auto scrollbar-hide">
+           <div className="hidden lg:flex items-center gap-0.2 xl:gap-1 overflow-x-auto scrollbar-hide">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isItemActive = isActive(item.path);
@@ -147,7 +147,7 @@ const Navbar = () => {
                 >
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    <span className="font-medium text-sm">Admin</span>
+                    {/* <span className="font-medium text-sm">Admin</span> */}
                   </div>
                   {isActive('/admin') && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-full"></div>
@@ -166,7 +166,7 @@ const Navbar = () => {
               data-testid="browse-users-button"
             >
               <Users className="w-4 h-4" />
-              <span className="text-xs lg:text-sm font-medium hidden lg:inline">Browse Users</span>
+              <span className="text-xs lg:text-sm font-medium hidden lg:inline">Users</span>
               <span className="text-xs lg:text-sm font-medium lg:hidden">Browse</span>
             </button>
             {/* Quick Actions */}

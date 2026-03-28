@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import UserBanRequest, PlatformMessageCreate
 from app.utils.auth import get_current_admin_user
 from app.database import get_db
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -387,6 +388,271 @@ async def delete_skill_exchange(exchange_id: str, current_admin_id: str = Depend
         raise
     except Exception as e:
         logger.error(f"Error deleting skill exchange: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+
+# =====================================================
+# ESCROW PAYMENT MANAGEMENT ENDPOINTS
+# =====================================================
+
+@router.get("/escrow/payments")
+async def get_escrow_payments(current_admin_id: str = Depends(get_current_admin_user)):
+    """Get all escrow payments for monitoring"""
+    try:
+        db = get_db()
+        
+        # Get all payments with escrow status
+        payments_result = db.table('payments').select('*').eq('is_escrowed', True).order('created_at', desc=True).execute()
+        
+        if not payments_result.data:
+            return []
+        
+        # Get user details for payers and payees
+        user_ids = list(set([p['payer_id'] for p in payments_result.data if p.get('payer_id')] + 
+                           [p['payee_id'] for p in payments_result.data if p.get('payee_id')]))
+        users_result = db.table('users').select('id, username, email, full_name').in_('id', user_ids).execute()
+        users_dict = {user['id']: user for user in (users_result.data or [])}
+        
+        # Get task details
+        task_ids = list(set([p['task_id'] for p in payments_result.data if p.get('task_id')]))
+        tasks_result = db.table('tasks').select('id, title, status').in_('id', task_ids).execute()
+        tasks_dict = {task['id']: task for task in (tasks_result.data or [])}
+        
+        # Combine payment data with user and task details
+        escrow_payments = []
+        for payment in payments_result.data:
+            escrow_payments.append({
+                **payment,
+                'payer': users_dict.get(payment['payer_id']),
+                'payee': users_dict.get(payment['payee_id']),
+                'task': tasks_dict.get(payment['task_id'])
+            })
+        
+        return escrow_payments
+    
+    except Exception as e:
+        logger.error(f"Error fetching escrow payments: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/escrow/refunds")
+async def get_escrow_refunds(current_admin_id: str = Depends(get_current_admin_user)):
+    """Get all refunded escrow payments"""
+    try:
+        db = get_db()
+        
+        # Get all refunded payments
+        refunds_result = db.table('payments').select('*').eq('status', 'refunded').order('updated_at', desc=True).execute()
+        
+        if not refunds_result.data:
+            return []
+        
+        # Get user details
+        user_ids = list(set([r['payer_id'] for r in refunds_result.data if r.get('payer_id')]))
+        users_result = db.table('users').select('id, username, email, full_name').in_('id', user_ids).execute()
+        users_dict = {user['id']: user for user in (users_result.data or [])}
+        
+        # Get task details
+        task_ids = list(set([r['task_id'] for r in refunds_result.data if r.get('task_id')]))
+        tasks_result = db.table('tasks').select('id, title, status, cancel_reason').in_('id', task_ids).execute()
+        tasks_dict = {task['id']: task for task in (tasks_result.data or [])}
+        
+        # Combine data
+        refunds_with_details = []
+        for refund in refunds_result.data:
+            refunds_with_details.append({
+                **refund,
+                'payer': users_dict.get(refund['payer_id']),
+                'task': tasks_dict.get(refund['task_id'])
+            })
+        
+        return refunds_with_details
+    
+    except Exception as e:
+        logger.error(f"Error fetching refunds: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/banned-users")
+async def get_banned_users(current_admin_id: str = Depends(get_current_admin_user)):
+    """Get all banned users"""
+    try:
+        db = get_db()
+        
+        # Get all banned users
+        banned_users_result = db.table('users').select('id, email, username, full_name, is_banned, ban_reason, banned_at, report_count, created_at').eq('is_banned', True).order('banned_at', desc=True).execute()
+        
+        return banned_users_result.data if banned_users_result.data else []
+    
+    except Exception as e:
+        logger.error(f"Error fetching banned users: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/disputes")
+async def get_all_admin_disputes(
+    status_filter: str = None,
+    current_admin_id: str = Depends(get_current_admin_user)
+):
+    """Get all disputes (Admin only) - alias for disputes route"""
+    try:
+        db = get_db()
+        
+        query = db.table('task_disputes').select('*')
+        
+        if status_filter:
+            query = query.eq('status', status_filter)
+        
+        disputes_result = query.order('created_at', desc=True).execute()
+        
+        if not disputes_result.data:
+            return []
+        
+        # Get user details
+        user_ids = list(set([d['raised_by'] for d in disputes_result.data] + [d['against_user_id'] for d in disputes_result.data]))
+        users_result = db.table('users').select('id, username, email, full_name').in_('id', user_ids).execute()
+        users_dict = {user['id']: user for user in (users_result.data or [])}
+        
+        # Get task details
+        task_ids = list(set([d['task_id'] for d in disputes_result.data]))
+        tasks_result = db.table('tasks').select('id, title, status, price').in_('id', task_ids).execute()
+        tasks_dict = {task['id']: task for task in (tasks_result.data or [])}
+        
+        # Combine data
+        disputes_with_details = []
+        for dispute in disputes_result.data:
+            disputes_with_details.append({
+                **dispute,
+                'raised_by_user': users_dict.get(dispute['raised_by']),
+                'against_user': users_dict.get(dispute['against_user_id']),
+                'task': tasks_dict.get(dispute['task_id'])
+            })
+        
+        return disputes_with_details
+    
+    except Exception as e:
+        logger.error(f"Error fetching disputes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/escrow/payments/{payment_id}/release")
+async def admin_release_payment(payment_id: str, current_admin_id: str = Depends(get_current_admin_user)):
+    """Manually release escrowed payment (Admin only)"""
+    try:
+        db = get_db()
+        
+        # Get payment
+        payment_result = db.table('payments').select('*').eq('id', payment_id).execute()
+        
+        if not payment_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+        
+        payment = payment_result.data[0]
+        
+        # Update payment status
+        db.table('payments').update({
+            'status': 'released',
+            'escrow_status': 'RELEASED',
+            'released_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', payment_id).execute()
+        
+        # Notify payee
+        if payment.get('payee_id'):
+            db.table('notifications').insert({
+                'user_id': payment['payee_id'],
+                'title': '💰 Payment Released by Admin',
+                'message': f'Payment of ₹{payment["amount"]} has been released to you by admin.',
+                'notification_type': 'payment',
+                'reference_id': payment_id,
+                'reference_type': 'payment'
+            }).execute()
+        
+        # Log admin action
+        db.table('admin_actions').insert({
+            'admin_id': current_admin_id,
+            'action_type': 'payment_released',
+            'target_type': 'payment',
+            'target_id': payment_id,
+            'action_details': {'amount': payment['amount'], 'payee_id': payment.get('payee_id')},
+            'reason': 'Admin manual release'
+        }).execute()
+        
+        return {"message": "Payment released successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error releasing payment: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.post("/escrow/payments/{payment_id}/refund")
+async def admin_refund_payment(payment_id: str, reason: str = "Admin refund", current_admin_id: str = Depends(get_current_admin_user)):
+    """Manually refund escrowed payment (Admin only)"""
+    try:
+        db = get_db()
+        
+        # Get payment
+        payment_result = db.table('payments').select('*').eq('id', payment_id).execute()
+        
+        if not payment_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+        
+        payment = payment_result.data[0]
+        
+        # Update payment status
+        db.table('payments').update({
+            'status': 'refunded',
+            'escrow_status': 'REFUNDED',
+            'refunded_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', payment_id).execute()
+        
+        # Notify payer
+        db.table('notifications').insert({
+            'user_id': payment['payer_id'],
+            'title': '🔄 Payment Refunded by Admin',
+            'message': f'Payment of ₹{payment["amount"]} has been refunded to you by admin. Reason: {reason}',
+            'notification_type': 'payment',
+            'reference_id': payment_id,
+            'reference_type': 'payment'
+        }).execute()
+        
+        # Log admin action
+        db.table('admin_actions').insert({
+            'admin_id': current_admin_id,
+            'action_type': 'payment_refunded',
+            'target_type': 'payment',
+            'target_id': payment_id,
+            'action_details': {'amount': payment['amount'], 'payer_id': payment['payer_id']},
+            'reason': reason
+        }).execute()
+        
+        return {"message": "Payment refunded successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refunding payment: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
