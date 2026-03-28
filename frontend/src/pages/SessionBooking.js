@@ -57,7 +57,7 @@ const SessionBooking = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('grid');
   const [selectedSession, setSelectedSession] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
