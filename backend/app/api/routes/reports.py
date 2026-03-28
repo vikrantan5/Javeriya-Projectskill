@@ -15,7 +15,7 @@ def utc_now_iso() -> str:
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_report(report_data: ReportCreate, current_user_id: str = Depends(get_current_user)):
-    """Create a new report"""
+    """Create a new report - enhanced with report_type and reported_user_id"""
     try:
         db = get_db()
         
@@ -24,8 +24,11 @@ async def create_report(report_data: ReportCreate, current_user_id: str = Depend
             'reporter_id': current_user_id,
             'reported_entity_type': report_data.reported_entity_type,
             'reported_entity_id': str(report_data.reported_entity_id),
+            'reported_user_id': str(report_data.reported_user_id) if report_data.reported_user_id else None,
+            'report_type': report_data.report_type,
             'reason': report_data.reason,
             'description': report_data.description,
+            'attachments': report_data.attachments or report_data.screenshots or [],
             'status': 'pending'
         }
         
@@ -39,6 +42,37 @@ async def create_report(report_data: ReportCreate, current_user_id: str = Depend
         
         created_report = result.data[0]
         
+        # Increment report count for reported user
+        if report_data.reported_user_id:
+            user_result = db.table('users').select('report_count').eq('id', str(report_data.reported_user_id)).execute()
+            if user_result.data:
+                current_count = user_result.data[0].get('report_count', 0)
+                new_count = current_count + 1
+                
+                # Update report count
+                db.table('users').update({
+                    'report_count': new_count
+                }).eq('id', str(report_data.reported_user_id)).execute()
+                
+                # Auto-block if report count >= 3
+                if new_count >= 3:
+                    logger.warning(f"[AUTO-BLOCK] User {report_data.reported_user_id} has {new_count} reports. Auto-blocking.")
+                    
+                    db.table('users').update({
+                        'is_banned': True,
+                        'is_active': False,
+                        'ban_reason': f'Auto-banned after receiving {new_count} reports',
+                        'banned_at': utc_now_iso()
+                    }).eq('id', str(report_data.reported_user_id)).execute()
+                    
+                    # Notify the banned user
+                    db.table('notifications').insert({
+                        'user_id': str(report_data.reported_user_id),
+                        'title': '🚫 Account Blocked',
+                        'message': f'Your account has been blocked after receiving multiple reports. Contact admin for review.',
+                        'notification_type': 'system'
+                    }).execute()
+        
         # Notify all admins
         admins_result = db.table('users').select('id').eq('role', 'admin').execute()
         
@@ -46,8 +80,8 @@ async def create_report(report_data: ReportCreate, current_user_id: str = Depend
             for admin in admins_result.data:
                 db.table('notifications').insert({
                     'user_id': admin['id'],
-                    'title': 'New Report Submitted',
-                    'message': f'A new {report_data.reported_entity_type} report has been submitted: {report_data.reason}',
+                    'title': '📢 New Report Submitted',
+                    'message': f'A new {report_data.report_type} report has been submitted: {report_data.reason}',
                     'notification_type': 'report',
                     'reference_id': created_report['id'],
                     'reference_type': 'report'

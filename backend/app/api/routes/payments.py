@@ -130,7 +130,7 @@ async def create_payment_order(payment_data: PaymentCreate, current_user_id: str
 @router.post("/verify")
 async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = Depends(get_current_user)):
 
-    """Verify Razorpay payment and handle task creation payments"""
+    """Verify Razorpay payment and handle task creation payments with escrow"""
     try:
         db = get_db()
         
@@ -152,6 +152,8 @@ async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = D
             'razorpay_payment_id': payload.razorpay_payment_id,
             'razorpay_signature': payload.razorpay_signature,
             'status': 'completed',
+            'escrow_status': 'ESCROW_HELD',
+            'payment_mode': 'TEST',
             'escrowed_at': utc_now_iso()
         }
         
@@ -160,6 +162,13 @@ async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = D
             raise HTTPException(status_code=404, detail="Payment record not found")
         
         payment = result.data[0]
+        
+        # Hold payment in escrow
+        await payment_service.hold_in_escrow(
+            payment_id=payment['id'],
+            task_id=payment.get('task_id'),
+            amount=payment['amount']
+        )
         
         # If this is a task creation payment, make the task visible
         if payment.get('payment_type') == 'task_creation':
@@ -174,18 +183,20 @@ async def verify_payment(payload: PaymentVerifyRequest, current_user_id: str = D
                 # Notify task creator
                 db.table('notifications').insert({
                     'user_id': current_user_id,
-                    'title': 'Task Payment Successful',
-                    'message': f'Your task payment has been confirmed. Your task is now visible to all users.',
+                    'title': '✅ Task Payment Successful',
+                    'message': f'Your task payment (₹{payment["amount"]}) has been held in escrow. Your task is now visible to all users.',
                     'notification_type': 'payment_success',
                     'reference_id': task_id,
                     'reference_type': 'task'
                 }).execute()
                 
-                logger.info(f"Task {task_id} is now visible after payment verification")
+                logger.info(f"[TEST MODE] Task {task_id} is now visible after payment verification. Payment held in escrow.")
         
         return {
-            "message": "Payment verified successfully",
+            "message": "Payment verified and held in escrow successfully",
             "status": "completed",
+            "escrow_status": "ESCROW_HELD",
+            "payment_mode": "TEST",
             "payment_type": payment.get('payment_type')
         }
     

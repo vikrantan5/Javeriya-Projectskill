@@ -10,11 +10,14 @@ from app.models.schemas import (
     TaskAcceptRequest,
     TaskAssignRequest,
     TaskAcceptorResponse,
+    TaskCancelRequest,
+    TaskCancelResponse,
 )
 from app.utils.auth import get_current_user
 from app.database import get_db
 from app.services.plagiarism_service import plagiarism_detector
 from app.services.activity_service import activity_service
+from app.services.payment_service import payment_service
 from typing import List
 from datetime import datetime, timezone
 import logging
@@ -22,6 +25,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
+# Predefined cancel reasons
+CANCEL_REASONS = [
+    "work_not_as_described",
+    "incomplete_work",
+    "fake_submission",
+    "delay_beyond_deadline",
+    "poor_quality",
+    "other"
+]
 
 
 def utc_now_iso() -> str:

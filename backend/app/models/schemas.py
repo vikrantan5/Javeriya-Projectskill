@@ -368,3 +368,44 @@ class ReportResponse(BaseModel):
 class ReportUpdate(BaseModel):
     status: str  # 'under_review', 'resolved', 'dismissed'
     admin_notes: Optional[str] = None
+    admin_action_taken: Optional[str] = None
+
+# =====================================================
+# TASK CANCELLATION SCHEMAS
+# =====================================================
+
+class TaskCancelRequest(BaseModel):
+    cancel_reason: str  # Must be one of predefined reasons
+    cancel_details: Optional[str] = None  # Additional details if \"other\" is selected
+
+class TaskCancelResponse(BaseModel):
+    message: str
+    refund_initiated: bool
+    refund_amount: Optional[float] = None
+    task_id: UUID
+
+# =====================================================
+# TASK DISPUTE SCHEMAS
+# =====================================================
+
+class TaskDisputeCreate(BaseModel):
+    task_id: UUID
+    against_user_id: UUID
+    dispute_type: str  # 'payment', 'work_quality', 'deadline', 'fraud', 'other'
+    dispute_reason: str
+    evidence_urls: Optional[List[str]] = None
+
+class TaskDisputeResponse(BaseModel):
+    id: UUID
+    task_id: UUID
+    raised_by: UUID
+    against_user_id: UUID
+    dispute_type: str
+    dispute_reason: str
+    status: str
+    created_at: datetime
+
+class TaskDisputeUpdate(BaseModel):
+    status: str  # 'under_review', 'resolved', 'dismissed'
+    resolution: Optional[str] = None
+    admin_notes: Optional[str] = None

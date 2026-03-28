@@ -34,7 +34,7 @@ from app.api.routes import (
     auth, skills, sessions, tasks, reviews, payments, ai, admin, 
     notifications, users, reputation, mentors, roadmap, verification,
       realtime, leaderboard, calendar, activities, storage, dashboard, 
-    ratings, wallet, reports
+    ratings, wallet, reports, disputes
 )
 
 
