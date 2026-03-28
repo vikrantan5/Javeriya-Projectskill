@@ -568,14 +568,7 @@ attachment_urls: uploadedFileUrls,
           </div>
           
           <div className="flex items-center gap-3">
-               <Link
-              to="/exchange"
-              className="flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-              data-testid="open-exchange-marketplace-link"
-            >
-              <Wallet className="w-5 h-5" />
-              Skill Exchange
-            </Link>
+             
             <button
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all"
@@ -640,7 +633,7 @@ attachment_urls: uploadedFileUrls,
         <div className="flex space-x-4 mb-8 border-b border-gray-200 dark:border-gray-700" data-testid="task-tabs">
           {[
             { id: 'all', label: 'All Tasks', icon: Briefcase },
-            { id: 'open', label: 'Open', icon: Target },
+            // { id: 'open', label: 'Open', icon: Target },
             { id: 'my-tasks', label: 'My Tasks', icon: User },
             { id: 'accepted', label: 'Accepted', icon: CheckCircle },
             { id: 'completed', label: 'Completed', icon: Award },
