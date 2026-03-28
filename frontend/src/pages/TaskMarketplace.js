@@ -55,7 +55,8 @@ import {
   Compass,
   Grid,
   List,
-  Wallet
+  Wallet,
+  Paperclip
 } from 'lucide-react';
 
 const TaskMarketplace = () => {
@@ -718,169 +719,231 @@ attachment_urls: uploadedFileUrls,
           </div>
         </div>
 
-        {/* Tasks Grid */}
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full animate-pulse"></div>
+     {/* Tasks Grid - Improved Card Design */}
+{loading ? (
+  <div className="flex justify-center py-12">
+    <div className="relative">
+      <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+) : displayedTasks.length === 0 ? (
+  <div className="bg-white dark:bg-gray-800 rounded-xl p-16 text-center shadow-lg" data-testid="no-tasks">
+    <div className="w-24 h-24 mx-auto bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
+      <Briefcase className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
+    </div>
+    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Tasks Found</h3>
+    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+      {searchTerm || filterDifficulty !== 'all' || filterPrice !== 'all'
+        ? "No tasks match your search criteria. Try adjusting your filters."
+        : activeTab === 'my-tasks' 
+          ? "You haven't created any tasks yet. Create your first task to get help!"
+          : "No tasks available at the moment. Check back later or create a new task."}
+    </p>
+    {(searchTerm || filterDifficulty !== 'all' || filterPrice !== 'all') && (
+      <button
+        onClick={() => {
+          setSearchTerm('');
+          setFilterDifficulty('all');
+          setFilterPrice('all');
+        }}
+        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        Clear Filters
+      </button>
+    )}
+  </div>
+) : (
+  <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
+    {displayedTasks.map((task) => {
+      const StatusIcon = getStatusIcon(task.status);
+      const DifficultyIcon = getDifficultyColor(task.difficulty_level) ? Award : Target;
+      
+      return (
+        <div
+          key={task.id}
+          className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-700"
+          onClick={() => {
+            setSelectedTask(task);
+            setShowTaskDetails(true);
+          }}
+          data-testid="task-card"
+        >
+          {/* Premium Gradient Border Effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" style={{ padding: '2px', mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }}></div>
+          
+          {/* Card Header with Dynamic Gradient */}
+          <div className={`relative h-28 p-5 ${
+            task.status === 'open' ? 'bg-gradient-to-r from-emerald-500 to-teal-500' :
+            task.status === 'accepted' ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
+            task.status === 'in_progress' ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+            task.status === 'completed' ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+            'bg-gradient-to-r from-gray-500 to-gray-600'
+          }`}>
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative flex justify-between items-start">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-mono bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-white">
+                  #{task.id?.slice(0, 8)}
+                </span>
+                <h3 className="text-white font-bold text-lg leading-tight line-clamp-1 mt-1">
+                  {task.title}
+                </h3>
+              </div>
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-sm flex items-center gap-1 ${
+                task.status === 'open' ? 'bg-emerald-500/90 text-white' :
+                task.status === 'accepted' ? 'bg-blue-500/90 text-white' :
+                task.status === 'in_progress' ? 'bg-orange-500/90 text-white' :
+                task.status === 'completed' ? 'bg-purple-500/90 text-white' :
+                'bg-gray-500/90 text-white'
+              }`}>
+                <StatusIcon className="w-3 h-3" />
+                {task.status.replace('_', ' ')}
+              </span>
+            </div>
+          </div>
+
+          {/* Card Body */}
+          <div className="p-5">
+            {/* Subject & Difficulty Row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {task.subject || 'General'}
+                </span>
+              </div>
+              <div className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                task.difficulty_level === 'easy' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                task.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              }`}>
+                {task.difficulty_level === 'easy' && '🌱 Easy'}
+                {task.difficulty_level === 'medium' && '📈 Medium'}
+                {task.difficulty_level === 'hard' && '🚀 Hard'}
               </div>
             </div>
-          </div>
-        ) : displayedTasks.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-16 text-center shadow-lg" data-testid="no-tasks">
-            <div className="w-24 h-24 mx-auto bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
-              <Briefcase className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Tasks Found</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-              {searchTerm || filterDifficulty !== 'all' || filterPrice !== 'all'
-                ? "No tasks match your search criteria. Try adjusting your filters."
-                : activeTab === 'my-tasks' 
-                  ? "You haven't created any tasks yet. Create your first task to get help!"
-                  : "No tasks available at the moment. Check back later or create a new task."}
+
+            {/* Description */}
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
+              {task.description}
             </p>
-            {(searchTerm || filterDifficulty !== 'all' || filterPrice !== 'all') && (
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterDifficulty('all');
-                  setFilterPrice('all');
-                }}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-            {displayedTasks.map((task) => {
-              const StatusIcon = getStatusIcon(task.status);
-              const DifficultyIcon = getDifficultyColor(task.difficulty_level) ? Award : Target;
-              
-              return (
-                <div
-                  key={task.id}
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
-                  onClick={() => {
-                    setSelectedTask(task);
-                    setShowTaskDetails(true);
-                  }}
-                  data-testid="task-card"
-                >
-                  {/* Card Header with Gradient */}
-                  <div className="relative h-32 bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
-                    <div className="absolute inset-0 bg-black/20"></div>
-                    <div className="relative flex justify-between items-start">
-                      <span className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-white text-xs">
-                        #{task.id?.slice(0, 8)}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                        <StatusIcon className="w-3 h-3 inline mr-1" />
-                        {task.status}
-                      </span>
-                    </div>
-                    
-                    <div className="relative mt-4">
-                      <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">{task.title}</h3>
-                      <p className="text-indigo-100 text-sm flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" />
-                        {task.subject || 'General'}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Card Body */}
-                  <div className="p-6">
-                    {/* Description */}
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
-                      {task.description}
-                    </p>
+            {/* Price & Deadline Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 text-center border border-green-100 dark:border-green-800">
+                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-gray-900 dark:text-white">₹{task.price}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Budget</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-3 text-center border border-blue-100 dark:border-blue-800">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                  {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Deadline</p>
+              </div>
+            </div>
 
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty_level)}`}>
-                        {task.difficulty_level}
-                      </span>
-                      {task.estimated_hours && (
-                        <span className="px-3 py-1 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-full text-xs font-medium">
-                          📅 {task.estimated_hours}h
-                        </span>
-                      )}
-                    </div>
+            {/* Additional Info Badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {task.estimated_hours && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-xs font-medium flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {task.estimated_hours} hrs
+                </span>
+              )}
+              {task.attachment_urls?.length > 0 && (
+                <span className="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium flex items-center gap-1">
+                  <Paperclip className="w-3 h-3" />
+                  {task.attachment_urls.length} file{task.attachment_urls.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-1 text-green-600 dark:text-green-400">
-                          <DollarSign className="w-4 h-4" />
-                          <span className="font-bold text-gray-900 dark:text-white">₹{task.price}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
-                      </div>
-                      <div className="text-center border-l border-gray-200 dark:border-gray-600">
-                        <div className="flex items-center justify-center gap-1 text-indigo-600 dark:text-indigo-400">
-                          <Calendar className="w-4 h-4" />
-                          <span className="font-bold text-gray-900 dark:text-white">
-                            {new Date(task.deadline).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Deadline</p>
-                      </div>
-                    </div>
-
-                    {/* Creator Info */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                          {task.creator_name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {task.creator_name || 'Anonymous'}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(task.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                       {task.status === 'pending_payment' && task.creator_id === user?.id && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPaymentTask(task);
-                            setPaymentModal(true);
-                          }}
-                          className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all shadow-md shadow-yellow-600/25 text-sm flex items-center gap-2"
-                          data-testid="pay-now-button"
-                        >
-                          <Wallet className="w-4 h-4" />
-                          Pay Now
-                        </button>
-                      )}
-                       {task.status === 'open' && task.creator_id !== user?.id && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAcceptTask(task.id);
-                          }}
-                          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md shadow-indigo-600/25 text-sm"
-                          data-testid="accept-task-button"
-                        >
-                          Accept Task
-                        </button>
-                      )}
-                    </div>
-                  </div>
+            {/* Creator & Action Row */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md">
+                  {task.creator_name?.charAt(0).toUpperCase() || 'U'}
                 </div>
-              );
-            })}
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {task.creator_name || 'Anonymous'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(task.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              {task.status === 'pending_payment' && task.creator_id === user?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPaymentTask(task);
+                    setPaymentModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md text-sm font-medium flex items-center gap-1"
+                  data-testid="pay-now-button"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  Pay Now
+                </button>
+              )}
+              
+              {task.status === 'open' && task.creator_id !== user?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAcceptTask(task.id);
+                  }}
+                  className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md text-sm font-medium flex items-center gap-1"
+                  data-testid="accept-task-button"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Accept
+                </button>
+              )}
+
+              {task.status === 'accepted' && task.acceptor_id === user?.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSubmissionModal(true);
+                    setShowTaskDetails(false);
+                  }}
+                  className="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md text-sm font-medium flex items-center gap-1"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Submit
+                </button>
+              )}
+
+              {/* View Details Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTask(task);
+                  setShowTaskDetails(true);
+                }}
+                className="px-3 py-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors text-sm font-medium"
+              >
+                Details →
+              </button>
+            </div>
           </div>
-        )}
+
+          {/* Hover Overlay Effect */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        </div>
+      );
+    })}
+  </div>
+)}
 
         {/* Create Task Modal */}
         {showCreateTask && (
