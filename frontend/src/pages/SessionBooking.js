@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { sessionService } from '../services/apiService';
+import { sessionService, ratingService } from '../services/apiService';
 import RealtimeChat from '../components/RealtimeChat';
 import UserProfileModal from '../components/UserProfileModal';
+import RatingModal from '../components/RatingModal';
+import { toast } from 'sonner';
 import {
   Calendar,
   Clock,
@@ -133,6 +135,7 @@ const SessionBooking = () => {
               session_type: 'skill_exchange',
               other_participant_name: otherParticipant?.full_name || otherParticipant?.username,
               other_participant_photo: otherParticipant?.profile_photo,
+              other_participant_id: otherParticipant?.id,
               skill_offered: task?.skill_offered,
               skill_requested: task?.skill_requested
             };
@@ -147,6 +150,50 @@ const SessionBooking = () => {
       setSessions([]);
     }
     setLoading(false);
+  };
+
+  // Mark skill exchange session as complete - Updates leaderboard!
+  const handleMarkComplete = async (session) => {
+    try {
+      setLoading(true);
+      const result = await sessionService.markSessionComplete(session.id);
+      
+      toast.success(result.message);
+      
+      // Reload sessions to get updated status
+      await loadSessions();
+      
+      // If both completed, show rating modal
+      if (result.both_completed && result.can_rate) {
+        setRatingSessionData({
+          sessionId: session.id,
+          receiverId: session.other_participant_id,
+          receiverName: session.other_participant_name
+        });
+        setShowRatingModal(true);
+      }
+    } catch (error) {
+      console.error('Error marking session complete:', error);
+      toast.error(error.response?.data?.detail || 'Failed to mark session complete');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open rating modal for a completed session
+  const handleRatePartner = (session) => {
+    setRatingSessionData({
+      sessionId: session.id,
+      receiverId: session.other_participant_id,
+      receiverName: session.other_participant_name
+    });
+    setShowRatingModal(true);
+  };
+
+  // Handle successful rating submission
+  const handleRatingSuccess = () => {
+    toast.success('Rating submitted successfully! Thank you for your feedback.');
+    loadSessions(); // Reload to update any changes
   };
 
   const handleCopyLink = (link) => {

@@ -145,6 +145,11 @@ export const sessionService = {
     const baseUrl = API_BASE_URL.replace(/^https?:\/\//, '');
     return `${wsProtocol}://${baseUrl}/api/sessions/ws/${sessionId}?token=${token}`;
   },
+   // Mark skill exchange session as complete (updates leaderboard)
+  markSessionComplete: async (sessionId) => {
+    const response = await api.post(`/api/sessions/skill-exchange-session/${sessionId}/complete`);
+    return response.data;
+  },
 };
 
 // ============================================

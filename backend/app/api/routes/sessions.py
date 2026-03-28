@@ -185,6 +185,7 @@ async def create_skill_exchange_session(
     except Exception as e:
         logger.error(f"Error creating skill exchange session: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/skill-exchange-sessions", response_model=List[dict])
 async def get_skill_exchange_sessions(current_user_id: str = Depends(get_current_user)):
     """Get all skill exchange sessions for current user"""
@@ -224,15 +225,12 @@ async def get_skill_exchange_sessions(current_user_id: str = Depends(get_current
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
-
 @router.post("/skill-exchange-session/{session_id}/complete")
 async def mark_skill_exchange_complete(
     session_id: str,
     current_user_id: str = Depends(get_current_user)
 ):
-    """Mark skill exchange session as completed by participant"""
+    """Mark skill exchange session as completed by participant - UPDATES LEADERBOARD"""
     try:
         db = get_db()
         
@@ -264,23 +262,50 @@ async def mark_skill_exchange_complete(
         
         if both_completed:
             update_data['status'] = 'completed'
+            
+            # 🎯 UPDATE LEADERBOARD SCORES - Increment total_skill_exchanges_completed for BOTH users
+            try:
+                # Update participant 1
+                user1 = db.table('users').select('total_skill_exchanges_completed, total_sessions').eq('id', session['participant1_id']).execute()
+                if user1.data:
+                    new_count = (user1.data[0].get('total_skill_exchanges_completed') or 0) + 1
+                    new_sessions = (user1.data[0].get('total_sessions') or 0) + 1
+                    db.table('users').update({
+                        'total_skill_exchanges_completed': new_count,
+                        'total_sessions': new_sessions
+                    }).eq('id', session['participant1_id']).execute()
+                
+                # Update participant 2
+                user2 = db.table('users').select('total_skill_exchanges_completed, total_sessions').eq('id', session['participant2_id']).execute()
+                if user2.data:
+                    new_count = (user2.data[0].get('total_skill_exchanges_completed') or 0) + 1
+                    new_sessions = (user2.data[0].get('total_sessions') or 0) + 1
+                    db.table('users').update({
+                        'total_skill_exchanges_completed': new_count,
+                        'total_sessions': new_sessions
+                    }).eq('id', session['participant2_id']).execute()
+                
+                logger.info(f"✅ Leaderboard updated: Session {session_id} completed by both participants")
+            except Exception as e:
+                logger.error(f"Error updating leaderboard scores: {str(e)}")
         
         db.table('skill_exchange_sessions').update(update_data).eq('id', session_id).execute()
         
         # Notify other participant
         db.table('notifications').insert({
             'user_id': other_participant_id,
-            'title': 'Skill Exchange Session Marked Complete',
-            'message': f'Your partner has marked the skill exchange session as complete.',
+            'title': '✅ Session Marked Complete',
+            'message': f'Your partner has marked the skill exchange session as complete. {"Session is now complete! Please rate your partner." if both_completed else "Please mark it complete too when done."}',
             'notification_type': 'session_complete',
             'reference_id': session_id,
             'reference_type': 'skill_exchange_session'
         }).execute()
         
         return {
-            "message": "Session marked as complete",
+            "message": "Session marked as complete" if not both_completed else "Session completed! You can now rate your partner.",
             "both_completed": both_completed,
-            "session_id": session_id
+            "session_id": session_id,
+            "can_rate": both_completed
         }
         
     except HTTPException:
