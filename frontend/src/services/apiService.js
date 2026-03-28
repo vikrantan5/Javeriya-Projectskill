@@ -223,6 +223,15 @@ acceptTask: async (taskId, message = '') => {
     });
     return response.data;
   },
+   cancelTask: async (taskId, cancelData) => {
+    const response = await api.post(`/api/tasks/${taskId}/cancel`, cancelData);
+    return response.data;
+  },
+
+  getTaskApprovalStatus: async (taskId) => {
+    const response = await api.get(`/api/tasks/${taskId}/approval-status`);
+    return response.data;
+  },
 };
 
 // ============================================
@@ -440,6 +449,55 @@ export const adminService = {
     const response = await api.post('/api/admin/messages', messageData);
     return response.data;
   },
+
+
+  // Escrow Management
+  getAllEscrowPayments: async (escrowStatus = null) => {
+    const url = escrowStatus ? `/api/admin/escrow/payments?escrow_status=${escrowStatus}` : '/api/admin/escrow/payments';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  getAllRefunds: async () => {
+    const response = await api.get('/api/admin/escrow/refunds');
+    return response.data;
+  },
+
+  forceReleasePayment: async (paymentId) => {
+    const response = await api.post(`/api/admin/escrow/payment/${paymentId}/force-release`);
+    return response.data;
+  },
+
+  forceRefundPayment: async (paymentId, reason) => {
+    const response = await api.post(`/api/admin/escrow/payment/${paymentId}/force-refund?reason=${encodeURIComponent(reason)}`);
+    return response.data;
+  },
+
+  getBannedUsers: async () => {
+    const response = await api.get('/api/admin/banned-users');
+    return response.data;
+  },
+
+  getAllDisputes: async (statusFilter = null) => {
+    const url = statusFilter ? `/api/admin/disputes?status_filter=${statusFilter}` : '/api/admin/disputes';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  // Reports Management
+  getAllReports: async (statusFilter = null) => {
+    const url = statusFilter ? `/api/reports/?status_filter=${statusFilter}` : '/api/reports/';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  updateReport: async (reportId, status, adminNotes = null) => {
+    const response = await api.patch(`/api/reports/${reportId}`, {
+      status,
+      admin_notes: adminNotes
+    });
+    return response.data;
+  },
 };
 
 
@@ -571,6 +629,23 @@ export const ratingService = {
 
   getUserRatings: async (userId) => {
     const response = await api.get(`/api/ratings/user/${userId}`);
+    return response.data;
+  },
+};
+
+
+
+// ============================================
+// REPORT SERVICE
+// ============================================
+export const reportService = {
+  createReport: async (reportData) => {
+    const response = await api.post('/api/reports/', reportData);
+    return response.data;
+  },
+
+  getMyReports: async () => {
+    const response = await api.get('/api/reports/my-reports');
     return response.data;
   },
 };

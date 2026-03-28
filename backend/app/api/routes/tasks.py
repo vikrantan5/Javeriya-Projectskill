@@ -1046,10 +1046,169 @@ async def approve_task_submission(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+@router.post("/{task_id}/cancel", response_model=TaskCancelResponse)
+async def cancel_task(
+    task_id: str,
+    cancel_data: TaskCancelRequest,
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    Cancel a task with MANDATORY reason.
+    If no reason provided → Auto-block user account
+    If valid reason → Refund payment to task owner
+    """
+    try:
+        db = get_db()
+        
+        # Get task
+        task_result = db.table('tasks').select('*').eq('id', task_id).execute()
+        
+        if not task_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        task = task_result.data[0]
+        
+        # Only task creator can cancel
+        if task['creator_id'] != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only task creator can cancel the task"
+            )
+        
+        # Cannot cancel completed tasks
+        if task['status'] == 'completed':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel completed task"
+            )
+        
+        # Validate cancel reason
+        cancel_reason = cancel_data.cancel_reason.strip()
+        
+        # CRITICAL: If no reason or empty reason → AUTO-BLOCK USER
+        if not cancel_reason or cancel_reason == "":
+            logger.warning(f"[AUTO-BLOCK] User {current_user_id} tried to cancel task without reason. Blocking account.")
+            
+            # Block the user immediately
+            db.table('users').update({
+                'is_banned': True,
+                'is_active': False,
+                'ban_reason': 'Attempted to cancel task without providing a valid reason (violation of task cancellation policy)',
+                'banned_at': utc_now_iso()
+            }).eq('id', current_user_id).execute()
+            
+            # Notify the user
+            db.table('notifications').insert({
+                'user_id': current_user_id,
+                'title': '🚫 Account Blocked',
+                'message': 'Your account has been blocked for attempting to cancel a task without providing a valid reason. This is a violation of our platform policies. Please contact admin for review.',
+                'notification_type': 'system'
+            }).execute()
+            
+            # Notify all admins
+            admins_result = db.table('users').select('id').eq('role', 'admin').execute()
+            if admins_result.data:
+                for admin in admins_result.data:
+                    db.table('notifications').insert({
+                        'user_id': admin['id'],
+                        'title': '⚠️ Auto-Block: No Cancel Reason',
+                        'message': f'User account {current_user_id} has been auto-blocked for cancelling task without reason.',
+                        'notification_type': 'admin_alert'
+                    }).execute()
+            
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been blocked for attempting to cancel without providing a reason. Please contact admin."
+            )
+        
+        # Validate against predefined reasons
+        if cancel_reason not in CANCEL_REASONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid cancel reason. Must be one of: {', '.join(CANCEL_REASONS)}"
+            )
+        
+        # If "other" reason, require details
+        if cancel_reason == "other" and not cancel_data.cancel_details:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please provide details for 'other' cancellation reason"
+            )
+        
+        # Update task to cancelled
+        db.table('tasks').update({
+            'status': 'cancelled',
+            'cancel_reason': cancel_reason,
+            'cancel_details': cancel_data.cancel_details,
+            'cancelled_at': utc_now_iso(),
+            'cancelled_by': current_user_id
+        }).eq('id', task_id).execute()
+        
+        # Process refund if payment exists
+        refund_initiated = False
+        refund_amount = None
+        
+        payment_result = db.table('payments').select('*').eq('task_id', task_id).eq('status', 'completed').eq('is_escrowed', True).order('created_at', desc=True).limit(1).execute()
+        
+        if payment_result.data:
+            payment = payment_result.data[0]
+            refund_amount = float(payment['amount'])
+            
+            # Refund from escrow
+            refund_success = await payment_service.refund_from_escrow(
+                payment_id=payment['id'],
+                razorpay_payment_id=payment.get('razorpay_payment_id'),
+                amount=refund_amount,
+                reason=f"Task cancelled: {cancel_reason}"
+            )
+            
+            if refund_success:
+                refund_initiated = True
+                logger.info(f"[ESCROW REFUND] Task {task_id} cancelled. Refund of ₹{refund_amount} initiated.")
+        
+        # Notify task acceptor (if exists)
+        if task.get('acceptor_id'):
+            db.table('notifications').insert({
+                'user_id': task['acceptor_id'],
+                'title': 'Task Cancelled by Owner',
+                'message': f'The task "{task["title"]}" has been cancelled. Reason: {cancel_reason}',
+                'notification_type': 'task_update',
+                'reference_id': task_id,
+                'reference_type': 'task'
+            }).execute()
+        
+        # Notify creator
+        db.table('notifications').insert({
+            'user_id': current_user_id,
+            'title': 'Task Cancelled Successfully',
+            'message': f'Your task "{task["title"]}" has been cancelled. {"Refund initiated." if refund_initiated else ""}',
+            'notification_type': 'task_update',
+            'reference_id': task_id,
+            'reference_type': 'task'
+        }).execute()
+        
+        return TaskCancelResponse(
+            message="Task cancelled successfully" + (" and refund initiated" if refund_initiated else ""),
+            refund_initiated=refund_initiated,
+            refund_amount=refund_amount,
+            task_id=task_id
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling task: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.delete("/{task_id}")
 async def delete_task(task_id: str, current_user_id: str = Depends(get_current_user)):
-    """Delete a task (only if status is open)"""
+    """Delete a task (only if status is open and not paid)"""
     try:
         db = get_db()
         
@@ -1064,10 +1223,10 @@ async def delete_task(task_id: str, current_user_id: str = Depends(get_current_u
         
         task = task_result.data[0]
         
-        if task['status'] != 'open':
+        if task['status'] != 'open' and task['status'] != 'pending_payment':
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot delete task that has been accepted"
+                detail="Cannot delete task that has been accepted. Use cancel instead."
             )
         
         # Delete task

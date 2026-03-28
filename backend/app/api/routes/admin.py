@@ -105,12 +105,15 @@ async def unban_user(user_id: str, current_admin_id: str = Depends(get_current_a
             "user_id": user_id
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error unbanning user: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
 
 @router.get("/tasks")
 async def get_all_tasks(current_admin_id: str = Depends(get_current_admin_user)):

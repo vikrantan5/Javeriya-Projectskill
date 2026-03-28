@@ -351,9 +351,12 @@ class PlatformMessageCreate(BaseModel):
 class ReportCreate(BaseModel):
     reported_entity_type: str  # 'task', 'user', 'skill_exchange', 'session'
     reported_entity_id: UUID
+    reported_user_id: Optional[UUID] = None  # User being reported
+    report_type: str = "general"  # 'fraud', 'incomplete', 'harassing', 'payment_issue', 'dispute', 'general'
     reason: str  # Category of report
     description: str  # Detailed description
     screenshots: Optional[List[str]] = None
+    attachments: Optional[List[str]] = None
 
 class ReportResponse(BaseModel):
     id: UUID
@@ -409,3 +412,24 @@ class TaskDisputeUpdate(BaseModel):
     status: str  # 'under_review', 'resolved', 'dismissed'
     resolution: Optional[str] = None
     admin_notes: Optional[str] = None
+
+
+
+
+# =====================================================
+# BANK DETAILS SCHEMAS (For Production Mode)
+# =====================================================
+
+class BankDetailsCreate(BaseModel):
+    bank_account_number: str
+    ifsc_code: str
+    account_holder_name: str
+    upi_id: Optional[str] = None
+    payout_preference: str = "bank"  # 'bank' or 'upi'
+
+class BankDetailsResponse(BaseModel):
+    bank_account_number: str
+    ifsc_code: str
+    account_holder_name: str
+    upi_id: Optional[str]
+    payout_preference: str
