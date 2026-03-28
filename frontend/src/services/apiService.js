@@ -468,6 +468,11 @@ export const adminService = {
     return response.data;
   },
 
+   getActivityData: async (timeRange = 'week') => {
+    const response = await api.get(`/api/admin/activity-data?time_range=${timeRange}`);
+    return response.data;
+  },
+
   createPlatformMessage: async (messageData) => {
     const response = await api.post('/api/admin/messages', messageData);
     return response.data;
@@ -487,12 +492,12 @@ export const adminService = {
   },
 
   forceReleasePayment: async (paymentId) => {
-    const response = await api.post(`/api/admin/escrow/payment/${paymentId}/force-release`);
+    const response = await api.post(`/api/admin/escrow/payments/${paymentId}/release`);
     return response.data;
   },
 
   forceRefundPayment: async (paymentId, reason) => {
-    const response = await api.post(`/api/admin/escrow/payment/${paymentId}/force-refund?reason=${encodeURIComponent(reason)}`);
+    const response = await api.post(`/api/admin/escrow/payments/${paymentId}/refund?reason=${encodeURIComponent(reason)}`);
     return response.data;
   },
 

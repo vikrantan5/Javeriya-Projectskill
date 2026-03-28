@@ -9,6 +9,11 @@ import {
   ArrowUpRight, ArrowDownRight, Circle
 } from 'lucide-react';
 
+import {
+  LineChart, Line, BarChart, Bar, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+
 const AdminDashboard = () => {
   // State management
   const [activeTab, setActiveTab] = useState('overview');
@@ -26,10 +31,28 @@ const AdminDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [reportFilter, setReportFilter] = useState('all');
   const [timeRange, setTimeRange] = useState('week');
+   const [activityData, setActivityData] = useState([]);
 
   useEffect(() => {
     loadAdminData();
   }, [activeTab]);
+
+
+  
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      loadActivityData();
+    }
+  }, [timeRange, activeTab]);
+
+  const loadActivityData = async () => {
+    try {
+      const data = await adminService.getActivityData(timeRange);
+      setActivityData(data.data || []);
+    } catch (error) {
+      console.error('Error loading activity data:', error);
+    }
+  };
 
   const loadAdminData = async () => {
     setLoading(true);
@@ -333,11 +356,68 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               </div>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-white/10 rounded-xl">
-                <div className="text-center">
-                  <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500">Analytics chart will be displayed here</p>
-                </div>
+                         <div className="h-64 flex items-center justify-center rounded-xl">
+                {activityData.length === 0 ? (
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500">Loading analytics...</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={activityData}>
+                      <defs>
+                        <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis dataKey="label" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                      <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(17, 24, 39, 0.95)', 
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#fff'
+                        }}
+                      />
+                      <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="users" 
+                        stroke="#6366f1" 
+                        fillOpacity={1} 
+                        fill="url(#colorUsers)" 
+                        name="New Users"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="tasks" 
+                        stroke="#8b5cf6" 
+                        fillOpacity={1} 
+                        fill="url(#colorTasks)" 
+                        name="Tasks"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="sessions" 
+                        stroke="#10b981" 
+                        fillOpacity={1} 
+                        fill="url(#colorSessions)" 
+                        name="Sessions"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 

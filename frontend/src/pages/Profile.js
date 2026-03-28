@@ -79,6 +79,16 @@ const Profile = () => {
     company: '',
     jobTitle: ''
   });
+
+
+   const [bankDetails, setBankDetails] = useState({
+    account_number: '',
+    ifsc_code: '',
+    account_holder_name: '',
+    bank_name: '',
+    upi_id: '',
+    preferred_payout_mode: 'bank_transfer'
+  });
   const [userStats, setUserStats] = useState({
     total_sessions: 0,
     total_tasks_completed: 0,
@@ -137,6 +147,24 @@ const Profile = () => {
       alert('Failed to update profile: ' + (error.response?.data?.detail || error.message));
     }
   };
+
+
+  const handleSaveBankDetails = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(`${BACKEND_URL}/api/users/me`, {
+        bank_details: bankDetails
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Bank details saved successfully!');
+      loadProfileData();
+    } catch (error) {
+      console.error('Error saving bank details:', error);
+      alert('Failed to save bank details: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
 
   const handleCopyProfileLink = () => {
     navigator.clipboard.writeText(`https://talentconnect.com/profile/${user?.username}`);
@@ -469,6 +497,7 @@ const Profile = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'skills', label: 'Skills & Expertise', icon: Brain },
+    { id: 'payment', label: 'Payment Details', icon: Coins },
     { id: 'activity', label: 'Activity', icon: TrendingUp },
     { id: 'achievements', label: 'Achievements', icon: Trophy },
   ];
@@ -1063,6 +1092,136 @@ const Profile = () => {
                 </div>
               </div>
             )}
+                        {activeTab === 'payment' && (
+              <div className="space-y-6">
+                {/* Payment Mode Indicator */}
+                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg p-6 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <AlertCircle className="w-6 h-6" />
+                    <h3 className="text-xl font-bold">Payment Mode: TEST</h3>
+                  </div>
+                  <p className="text-yellow-100 text-sm">
+                    Currently, all transactions are in TEST mode. No real money will be transferred.
+                    Bank details are optional but required when switching to PRODUCTION mode.
+                  </p>
+                </div>
+
+                {/* Bank Details Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bank Account Details</h3>
+                    <span className="text-xs px-3 py-1 bg-blue-100 text-blue-600 rounded-full">
+                      For Production Payouts
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Account Holder Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={bankDetails.account_holder_name}
+                        onChange={(e) => setBankDetails({ ...bankDetails, account_holder_name: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Enter account holder name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Account Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={bankDetails.account_number}
+                        onChange={(e) => setBankDetails({ ...bankDetails, account_number: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Enter account number"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          IFSC Code *
+                        </label>
+                        <input
+                          type="text"
+                          value={bankDetails.ifsc_code}
+                          onChange={(e) => setBankDetails({ ...bankDetails, ifsc_code: e.target.value.toUpperCase() })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                          placeholder="IFSC Code"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Bank Name
+                        </label>
+                        <input
+                          type="text"
+                          value={bankDetails.bank_name}
+                          onChange={(e) => setBankDetails({ ...bankDetails, bank_name: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                          placeholder="Bank Name"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        UPI ID (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={bankDetails.upi_id}
+                        onChange={(e) => setBankDetails({ ...bankDetails, upi_id: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        placeholder="yourname@upi"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Preferred Payout Mode
+                      </label>
+                      <select
+                        value={bankDetails.preferred_payout_mode}
+                        onChange={(e) => setBankDetails({ ...bankDetails, preferred_payout_mode: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="upi">UPI</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleSaveBankDetails}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-5 h-5" />
+                      Save Bank Details
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment Info */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Secure & Encrypted</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Your bank details are encrypted and stored securely. They will only be used for processing payouts when you complete tasks or sessions.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {activeTab === 'activity' && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>

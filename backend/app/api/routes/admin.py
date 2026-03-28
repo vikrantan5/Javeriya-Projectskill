@@ -226,6 +226,85 @@ async def get_platform_analytics(current_admin_id: str = Depends(get_current_adm
             detail=str(e)
         )
 
+
+
+@router.get("/activity-data")
+async def get_platform_activity_data(
+    time_range: str = 'week',
+    current_admin_id: str = Depends(get_current_admin_user)
+):
+    """Get platform activity data for charts (users, tasks, sessions, revenue over time)"""
+    try:
+        from datetime import datetime, timedelta
+        db = get_db()
+        
+        # Calculate date range
+        now = datetime.now(timezone.utc)
+        if time_range == 'day':
+            days = 1
+            data_points = 24  # hourly
+        elif time_range == 'week':
+            days = 7
+            data_points = 7  # daily
+        else:  # month
+            days = 30
+            data_points = 30  # daily
+        
+        start_date = now - timedelta(days=days)
+        
+        # Get all data within range
+        users_data = db.table('users').select('created_at').gte('created_at', start_date.isoformat()).execute()
+        tasks_data = db.table('tasks').select('created_at, status').gte('created_at', start_date.isoformat()).execute()
+        sessions_data = db.table('learning_sessions').select('created_at').gte('created_at', start_date.isoformat()).execute()
+        payments_data = db.table('payments').select('created_at, amount, status').gte('created_at', start_date.isoformat()).execute()
+        
+        # Process data by time period
+        activity_data = []
+        
+        for i in range(data_points):
+            if time_range == 'day':
+                period_start = start_date + timedelta(hours=i)
+                period_end = period_start + timedelta(hours=1)
+                label = period_start.strftime('%H:00')
+            else:
+                period_start = start_date + timedelta(days=i)
+                period_end = period_start + timedelta(days=1)
+                label = period_start.strftime('%m/%d')
+            
+            # Count items in this period
+            users_count = sum(1 for u in (users_data.data or []) 
+                            if period_start <= datetime.fromisoformat(u['created_at'].replace('Z', '+00:00')) < period_end)
+            
+            tasks_count = sum(1 for t in (tasks_data.data or []) 
+                            if period_start <= datetime.fromisoformat(t['created_at'].replace('Z', '+00:00')) < period_end)
+            
+            sessions_count = sum(1 for s in (sessions_data.data or []) 
+                               if period_start <= datetime.fromisoformat(s['created_at'].replace('Z', '+00:00')) < period_end)
+            
+            revenue = sum(p['amount'] for p in (payments_data.data or [])
+                         if p.get('status') == 'released' and 
+                         period_start <= datetime.fromisoformat(p['created_at'].replace('Z', '+00:00')) < period_end)
+            
+            activity_data.append({
+                'label': label,
+                'users': users_count,
+                'tasks': tasks_count,
+                'sessions': sessions_count,
+                'revenue': revenue
+            })
+        
+        return {
+            'time_range': time_range,
+            'data': activity_data
+        }
+    
+    except Exception as e:
+        logger.error(f"Error fetching activity data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 @router.post("/messages")
 async def create_platform_message(message_data: PlatformMessageCreate, current_admin_id: str = Depends(get_current_admin_user)):
     """Create a platform-wide message/announcement"""
