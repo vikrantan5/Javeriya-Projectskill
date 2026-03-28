@@ -498,6 +498,17 @@ export const adminService = {
     });
     return response.data;
   },
+
+   // Transactions Management
+  getAllTransactions: async () => {
+    const response = await api.get('/api/admin/transactions');
+    return response.data;
+  },
+
+  getTransactionDetails: async (transactionId) => {
+    const response = await api.get(`/api/admin/transactions/${transactionId}`);
+    return response.data;
+  },
 };
 
 

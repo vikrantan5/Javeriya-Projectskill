@@ -32,7 +32,13 @@ import {
   LogOut,
   Bell,
   Menu,
-  X
+  X,
+  CreditCard,
+  Flag,
+  CheckCircle,
+  XCircle,
+  DollarSign,
+  Wallet
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -45,6 +51,10 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [timeRange, setTimeRange] = useState('week');
+   const [activeTab, setActiveTab] = useState('users');
+  const [transactions, setTransactions] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [reportFilter, setReportFilter] = useState('all');
 
   useEffect(() => {
     loadAdminData();
@@ -53,12 +63,16 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      const [usersData, analyticsData] = await Promise.all([
+      const [usersData, analyticsData, transactionsData, reportsData] = await Promise.all([
         adminService.getAllUsers().catch(() => []),
         adminService.getAnalytics().catch(() => null),
+        adminService.getAllTransactions().catch(() => []),
+        adminService.getAllReports().catch(() => []),
       ]);
       setUsers(Array.isArray(usersData) ? usersData : []);
       setAnalytics(analyticsData);
+      setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
+      setReports(Array.isArray(reportsData) ? reportsData : []);
     } catch (error) {
       console.error('Error loading admin data:', error);
     }
@@ -88,6 +102,22 @@ const AdminDashboard = () => {
     }
   };
 
+   const handleResolveReport = async (reportId, status) => {
+    const notes = status === 'resolved' 
+      ? prompt('Enter resolution notes:')
+      : prompt('Enter reason for dismissal:');
+    
+    if (notes) {
+      try {
+        await adminService.updateReport(reportId, status, notes);
+        loadAdminData();
+        alert(`Report ${status} successfully`);
+      } catch (error) {
+        alert('Failed to update report: ' + error.message);
+      }
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,6 +131,11 @@ const AdminDashboard = () => {
       (filterStatus === 'inactive' && !user.is_active);
     
     return matchesSearch && matchesRole && matchesStatus;
+  });
+
+    const filteredReports = reports.filter(report => {
+    if (reportFilter === 'all') return true;
+    return report.status === reportFilter;
   });
 
   const stats = [

@@ -7,6 +7,8 @@ import RealtimeChat from '../components/RealtimeChat';
 import PaymentModal from '../components/PaymentModal';
 import FileUploadZone from '../components/FileUploadZone';
 import TaskApplicantsModal from '../components/TaskApplicantsModal';
+import TaskCancelModal from '../components/TaskCancelModal';
+import ReportModal from '../components/ReportModal';
 import { uploadMultipleFiles } from '../services/fileUploadService';
 import {
   Briefcase,
@@ -56,7 +58,9 @@ import {
   Grid,
   List,
   Wallet,
-  Paperclip
+    Paperclip,
+  XCircle,
+  Flag
 } from 'lucide-react';
 
 const TaskMarketplace = () => {
@@ -102,6 +106,11 @@ const TaskMarketplace = () => {
   const [paymentTask, setPaymentTask] = useState(null);
     const [showApplicants, setShowApplicants] = useState(false);
   const [applicantsTask, setApplicantsTask] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelTask, setCancelTask] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportUser, setReportUser] = useState(null);
+  const [reportTask, setReportTask] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -1370,6 +1379,44 @@ attachment_urls: uploadedFileUrls,
                       </button>
                     )}
                   </div>
+                    {/* Cancel & Report Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    {/* Cancel Button - Task creator can cancel if task is not completed */}
+                    {selectedTask.status !== 'completed' && selectedTask.creator_id === user?.id && (
+                      <button
+                        onClick={() => {
+                          setCancelTask(selectedTask);
+                          setShowCancelModal(true);
+                          setShowTaskDetails(false);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white py-3 rounded-xl transition-all shadow-lg shadow-red-600/25 flex items-center justify-center gap-2"
+                        data-testid="cancel-task-button"
+                      >
+                        <XCircle className="w-5 h-5" />
+                        Cancel Task
+                      </button>
+                    )}
+
+                    {/* Report Button - Both parties can report */}
+                    {(selectedTask.creator_id === user?.id || selectedTask.acceptor_id === user?.id) && (
+                      <button
+                        onClick={() => {
+                          const otherUser = selectedTask.creator_id === user?.id 
+                            ? { id: selectedTask.acceptor_id, username: 'Task Acceptor' }
+                            : { id: selectedTask.creator_id, username: selectedTask.creator_name || 'Task Creator' };
+                          setReportUser(otherUser);
+                          setReportTask(selectedTask);
+                          setShowReportModal(true);
+                          setShowTaskDetails(false);
+                        }}
+                        className="flex-1 border-2 border-orange-600 text-orange-600 dark:text-orange-400 py-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center justify-center gap-2"
+                        data-testid="report-user-button"
+                      >
+                        <Flag className="w-5 h-5" />
+                        Report User
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1662,7 +1709,29 @@ attachment_urls: uploadedFileUrls,
         onClose={() => setShowPayment(false)}
         onSuccess={handlePaymentSuccess}
       />
+        {/* Cancel Task Modal */}
+      <TaskCancelModal
+        task={cancelTask}
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onSuccess={(response) => {
+          showNotification(response.message || 'Task cancelled successfully', 'success');
+          loadTasks();
+          setShowCancelModal(false);
+        }}
+      />
 
+      {/* Report User Modal */}
+      <ReportModal
+        reportedUser={reportUser}
+        task={reportTask}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSuccess={(response) => {
+          showNotification('Report submitted successfully. Our team will review it.', 'success');
+          setShowReportModal(false);
+        }}
+      />
       <style jsx>{`
         @keyframes blob {
           0%, 100% { transform: translate(0px, 0px) scale(1); }
