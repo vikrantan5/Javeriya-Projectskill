@@ -81,6 +81,8 @@ const SessionBooking = () => {
   const [chatSession, setChatSession] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingSessionData, setRatingSessionData] = useState(null);
 
   useEffect(() => {
     loadSessions();
@@ -499,19 +501,31 @@ const SessionBooking = () => {
                       <span className="capitalize">{session.status}</span>
                     </div>
 
-                    {/* Session Details */}
+                                       {/* Session Details */}
                     <div className="space-y-3 mb-4">
                       <div className="flex items-center gap-3 text-sm">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-600 dark:text-gray-400">
-                          Duration: {session.duration_minutes} minutes
+                          Duration: {session.meeting_duration_minutes || session.duration_minutes || 60} minutes
                         </span>
                       </div>
                       
+                      {/* Meeting Date/Time Display - Fixed to show meeting_date */}
                       <div className="flex items-center gap-3 text-sm">
                         <CalendarIcon className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-600 dark:text-gray-400">
-                          {session.scheduled_at ? new Date(session.scheduled_at).toLocaleString() : 'Not scheduled'}
+                          {session.meeting_date 
+                            ? new Date(session.meeting_date).toLocaleString('en-US', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : session.scheduled_at 
+                              ? new Date(session.scheduled_at).toLocaleString()
+                              : 'Not scheduled'}
                         </span>
                       </div>
 
@@ -522,11 +536,24 @@ const SessionBooking = () => {
                             {session.meeting_link}
                           </span>
                           <button
-                            onClick={() => handleCopyLink(session.meeting_link)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyLink(session.meeting_link);
+                            }}
                             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                           >
                             {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
                           </button>
+                        </div>
+                      )}
+                      
+                      {/* Meeting Topic Display */}
+                      {session.meeting_topic && (
+                        <div className="flex items-center gap-3 text-sm">
+                          <BookOpen className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {session.meeting_topic}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -591,9 +618,33 @@ const SessionBooking = () => {
                         Details
                       </button>
 
-                      {session.status === 'completed' && (
-                        <button className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                          <MessageSquare className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                           {/* Mark as Complete button for skill exchange sessions */}
+                      {session.session_type === 'skill_exchange' && session.status === 'scheduled' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkComplete(session);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          data-testid="mark-complete-button"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Mark Complete
+                        </button>
+                      )}
+
+                      {/* Rate Partner button for completed sessions */}
+                      {session.status === 'completed' && session.session_type === 'skill_exchange' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRatePartner(session);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                          data-testid="rate-partner-button"
+                        >
+                          <Star className="w-4 h-4" />
+                          Rate Partner
                         </button>
                       )}
                     </div>
@@ -864,6 +915,20 @@ const SessionBooking = () => {
             setShowProfileModal(false);
             setSelectedUserId(null);
           }}
+        />
+      )}
+        {/* Rating Modal - Shows after session completion */}
+      {showRatingModal && ratingSessionData && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => {
+            setShowRatingModal(false);
+            setRatingSessionData(null);
+          }}
+          sessionId={ratingSessionData.sessionId}
+          receiverId={ratingSessionData.receiverId}
+          receiverName={ratingSessionData.receiverName}
+          onSuccess={handleRatingSuccess}
         />
       )}
     </div>
