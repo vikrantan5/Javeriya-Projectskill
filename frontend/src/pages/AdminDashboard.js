@@ -258,97 +258,100 @@ const AdminDashboard = () => {
       <Navbar />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+          {/* Enhanced Header */}
+        <div className="flex items-center justify-between mb-10 animate-scale-in">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-            <p className="text-gray-400">Manage your platform and monitor performance</p>
+            <h1 className="text-5xl font-black text-white mb-3 tracking-tight">Admin Dashboard</h1>
+            <p className="text-gray-300 text-lg font-medium">Manage your platform and monitor performance</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all border border-white/10">
-              <Bell className="w-5 h-5" />
+          <div className="flex items-center gap-4">
+            <button className="p-3 glass-card hover:bg-white/15 rounded-2xl text-gray-300 hover:text-white transition-all border border-white/10 transform hover:scale-110">
+              <Bell className="w-6 h-6" />
             </button>
-            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all border border-white/10">
-              <Settings className="w-5 h-5" />
+            <button className="p-3 glass-card hover:bg-white/15 rounded-2xl text-gray-300 hover:text-white transition-all border border-white/10 transform hover:scale-110">
+              <Settings className="w-6 h-6" />
             </button>
             <button
               onClick={loadAdminData}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all border border-white/10"
+              className="flex items-center gap-3 px-6 py-3 glass-card hover:bg-white/15 rounded-2xl text-white transition-all border border-white/10 font-semibold transform hover:scale-105"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-5 h-5" />
               Refresh
             </button>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
             return (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 hover:bg-white/10 transition-all duration-300"
+                className="group relative overflow-hidden rounded-3xl glass-card border border-white/10 p-7 hover:bg-white/15 transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 shadow-premium animate-scale-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
                 data-testid={`${stat.label.toLowerCase().replace(' ', '-')}-stat`}
               >
-                <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
                 <div className="relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 bg-gradient-to-r ${stat.color} rounded-xl shadow-lg`}>
-                      <Icon className="w-6 h-6 text-white" />
+                  <div className="flex items-center justify-between mb-5">
+                    <div className={`p-4 bg-gradient-to-r ${stat.color} rounded-2xl shadow-premium transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
+                      <Icon className="w-7 h-7 text-white" />
                     </div>
-                    <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
-                      <TrendIcon className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400">{stat.change}</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full backdrop-blur-sm border border-green-500/30">
+                      <TrendIcon className="w-4 h-4 text-green-400" />
+                      <span className="text-xs font-bold text-green-400">{stat.change}</span>
                     </div>
                   </div>
-                  <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-white">{stat.value}</p>
+                  <p className="text-gray-300 text-sm font-semibold mb-2">{stat.label}</p>
+                  <p className="text-4xl font-black text-white">{stat.value}</p>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mb-6 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 min-w-max">
+         {/* Enhanced Tab Navigation */}
+        <div className="mb-8 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-3 min-w-max">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl transition-all whitespace-nowrap font-semibold transform hover:scale-105 ${
                     activeTab === tab.id
-                      ? 'bg-indigo-500 text-white shadow-lg'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-premium'
+                      : 'glass-card text-gray-300 hover:bg-white/15 hover:text-white border border-white/10'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{tab.label}</span>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm">{tab.label}</span>
                 </button>
               );
             })}
           </div>
         </div>
-
-        {/* Tab Content */}
+           {/* Tab Content */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Platform Activity</h2>
-                <div className="flex gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 glass-card backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-premium">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-white mb-2">Platform Activity</h2>
+                  <p className="text-gray-400">Real-time analytics</p>
+                </div>
+                <div className="flex gap-3">
                   {['day', 'week', 'month'].map((range) => (
                     <button
                       key={range}
                       onClick={() => setTimeRange(range)}
-                      className={`px-3 py-1 rounded-lg text-sm capitalize transition-all ${
+                      className={`px-4 py-2 rounded-xl text-sm capitalize transition-all font-semibold ${
                         timeRange === range
-                          ? 'bg-indigo-500 text-white'
-                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                          : 'glass-card text-gray-400 hover:bg-white/10 border border-white/10'
                       }`}
                     >
                       {range}
@@ -421,32 +424,33 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
-              <div className="space-y-3">
+            <div className="glass-card backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-premium">
+              <h2 className="text-2xl font-black text-white mb-2">Quick Actions</h2>
+              <p className="text-gray-400 mb-8">Manage platform</p>
+              <div className="space-y-4">
                 {[
-                  { icon: Users, label: 'View All Users', action: () => setActiveTab('users'), color: 'blue' },
-                  { icon: Lock, label: 'Escrow Payments', action: () => setActiveTab('escrow'), color: 'purple' },
-                  { icon: Flag, label: 'Review Reports', action: () => setActiveTab('reports'), color: 'yellow', badge: reports.filter(r => r.status === 'pending').length },
-                  { icon: Ban, label: 'Banned Users', action: () => setActiveTab('banned'), color: 'red' },
+                  { icon: Users, label: 'View All Users', action: () => setActiveTab('users'), color: 'from-blue-500 to-cyan-400', badge: null },
+                  { icon: Lock, label: 'Escrow Payments', action: () => setActiveTab('escrow'), color: 'from-purple-500 to-pink-400', badge: null },
+                  { icon: Flag, label: 'Review Reports', action: () => setActiveTab('reports'), color: 'from-yellow-500 to-orange-400', badge: reports.filter(r => r.status === 'pending').length },
+                  { icon: Ban, label: 'Banned Users', action: () => setActiveTab('banned'), color: 'from-red-500 to-pink-500', badge: null },
                 ].map((action, index) => {
                   const Icon = action.icon;
                   return (
                     <button
                       key={index}
                       onClick={action.action}
-                      className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
+                      className="w-full flex items-center justify-between p-5 glass-card hover:bg-white/15 rounded-2xl transition-all group transform hover:-translate-y-1 border border-white/10"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 bg-${action.color}-500/20 rounded-lg`}>
-                          <Icon className={`w-4 h-4 text-${action.color}-400`} />
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 bg-gradient-to-r ${action.color} rounded-xl transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
+                          <Icon className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-gray-300 group-hover:text-white transition-colors">
+                        <span className="text-gray-300 group-hover:text-white transition-colors font-semibold">
                           {action.label}
                         </span>
                       </div>
                       {action.badge && action.badge > 0 && (
-                        <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
+                        <span className="px-3 py-1.5 bg-red-500/30 text-red-300 text-xs rounded-full font-bold border border-red-500/50">
                           {action.badge}
                         </span>
                       )}

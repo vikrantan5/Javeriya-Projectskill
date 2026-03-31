@@ -68,10 +68,11 @@ const Dashboard = () => {
   const [recommendedSkills, setRecommendedSkills] = useState([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [activeChart, setActiveChart] = useState('progress');
- const [tokenBalance, setTokenBalance] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
   const [loadingTokens, setLoadingTokens] = useState(false);
-    const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  
   useEffect(() => {
     // Set greeting based on time of day
     const hour = new Date().getHours();
@@ -82,7 +83,7 @@ const Dashboard = () => {
     loadDashboardData();
     loadRecommendedSkills();
     loadRecentActivities();
-  loadTokenBalance();
+    loadTokenBalance();
     // Hide welcome message after 5 seconds
     const timer = setTimeout(() => setShowWelcome(false), 5000);
     return () => clearTimeout(timer);
@@ -111,7 +112,7 @@ const Dashboard = () => {
     }
   };
 
-const loadRecommendedSkills = async () => {
+  const loadRecommendedSkills = async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
@@ -123,16 +124,16 @@ const loadRecommendedSkills = async () => {
     } catch (error) {
       console.error('Error loading recommended skills:', error);
       // Fallback to default skills
-    setRecommendedSkills([
-       { name: 'React Development', icon: 'Code', color: 'blue', students: 0 },
-        { name: 'UI/UX Design', icon: 'Palette', color: 'purple', students: 0 },
-        { name: 'Digital Marketing', icon: 'Globe', color: 'green', students: 0 },
-        { name: 'Photography', icon: 'Camera', color: 'orange', students: 0 },
-    ]);
-  }
+      setRecommendedSkills([
+        { name: 'React Development', icon: Code, color: 'from-blue-500 to-cyan-400', students: 0 },
+        { name: 'UI/UX Design', icon: Palette, color: 'from-purple-500 to-pink-400', students: 0 },
+        { name: 'Digital Marketing', icon: Globe, color: 'from-green-500 to-emerald-400', students: 0 },
+        { name: 'Photography', icon: Camera, color: 'from-orange-500 to-red-400', students: 0 },
+      ]);
+    }
   };
 
- const loadRecentActivities = async () => {
+  const loadRecentActivities = async () => {
     try {
       // Use the correct activities endpoint
       const activities = await activitiesService.getRecent(20);
@@ -230,95 +231,66 @@ const loadRecommendedSkills = async () => {
 
   return (
     <div className={`${darkMode ? 'dark' : ''}`}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300" data-testid="dashboard-page">
-        <Navbar />
+      <div className="min-h-screen relative bg-user-gradient" data-testid="dashboard-page">
+        {/* Overlay for better content visibility */}
+        <div className="absolute inset-0 bg-white/40 dark:bg-gray-900/60 backdrop-blur-sm"></div>
         
-        {/* Animated Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 dark:bg-indigo-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-slow"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 dark:bg-purple-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-slow animation-delay-2000"></div>
-          <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-pink-200 dark:bg-pink-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-slow animation-delay-4000"></div>
-          
-          {/* Floating Particles */}
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-indigo-400/20 dark:bg-indigo-400/10 rounded-full animate-float-particle"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${3 + Math.random() * 5}s`
-              }}
-            />
-          ))}
+        <div className="relative z-10">
+          <Navbar />
+        </div>
+        
+        {/* Subtle Animated Accents */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute top-20 right-20 w-72 h-72 bg-indigo-400/10 dark:bg-indigo-400/5 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth"></div>
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-400/10 dark:bg-purple-400/5 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth" style={{animationDelay: '2s'}}></div>
         </div>
 
-        {/* Welcome Toast */}
-        {/* {showWelcome && (
-          <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-indigo-100 dark:border-gray-700 p-4 max-w-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white animate-bounce">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">Welcome back! 👋</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    You have {stats.totalTasks} tasks completed this week. Keep up the great work!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Welcome Section with Glass Effect */}
-          <div className="relative mb-8 group" data-testid="welcome-section">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity animate-pulse-slow"></div>
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-1">
-              <div className="relative bg-white/10 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl p-8">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 z-10">
+          {/* Welcome Section with Enhanced Glass Effect */}
+          <div className="relative mb-10 group animate-scale-in" data-testid="welcome-section">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-1 shadow-premium-lg">
+              <div className="relative glass-card rounded-[22px] p-8 md:p-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-700/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
                 
-                <div className="relative flex items-center justify-between flex-wrap gap-6">
-                  <div>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center text-4xl shadow-xl animate-float">
+                <div className="relative flex items-center justify-between flex-wrap gap-8">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-6 mb-6">
+                      <div className="relative group">
+                        <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl flex items-center justify-center text-5xl shadow-premium transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
                           {getGreetingEmoji()}
                         </div>
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-gray-800 animate-pulse shadow-lg"></div>
                       </div>
                       <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
-                          <h1 className="text-4xl font-bold text-white">
+                        <div className="flex items-center gap-4 mb-2">
+                          <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
+                          <h1 className="text-5xl font-black text-white tracking-tight">
                             {greeting}, {user?.full_name || user?.username}!
                           </h1>
                         </div>
-                        <p className="text-xl text-indigo-100">
-                          Ready to level up your skills today?
+                        <p className="text-xl text-white/90 font-medium">
+                          Ready to level up your skills today? ✨
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3 mt-4">
-                      <div className="px-4 py-2 bg-white/20 backdrop-blur rounded-full text-white text-sm font-medium flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
+                    <div className="flex flex-wrap items-center gap-4 mt-6">
+                      <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-full text-white text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                        <Calendar className="w-5 h-5" />
                         Member since {new Date(user?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                       </div>
-                      <div className="px-4 py-2 bg-yellow-400/20 backdrop-blur rounded-full text-yellow-100 text-sm font-medium flex items-center gap-2">
-                        <Flame className="w-4 h-4" />
+                      <div className="px-5 py-2.5 bg-yellow-400/30 backdrop-blur-md rounded-full text-yellow-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                        <Flame className="w-5 h-5" />
                         {stats.totalSessions} day streak
                       </div>
-                      <div className="px-4 py-2 bg-purple-400/20 backdrop-blur rounded-full text-purple-100 text-sm font-medium flex items-center gap-2">
-                        <Trophy className="w-4 h-4" />
+                      <div className="px-5 py-2.5 bg-purple-400/30 backdrop-blur-md rounded-full text-purple-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                        <Trophy className="w-5 h-5" />
                         {stats.averageRating > 0 ? `${stats.averageRating} ⭐ Rating` : 'New Member'}
                       </div>
-                       <div className="px-4 py-2 bg-green-400/20 backdrop-blur rounded-full text-green-100 text-sm font-medium flex items-center gap-2" data-testid="token-balance-badge">
-                        <Coins className="w-4 h-4" />
+                      <div className="px-5 py-2.5 bg-green-400/30 backdrop-blur-md rounded-full text-green-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300" data-testid="token-balance-badge">
+                        <Coins className="w-5 h-5" />
                         {loadingTokens ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
@@ -326,15 +298,19 @@ const loadRecommendedSkills = async () => {
                         )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Motivational Quote Card - Use motivationalQuote here */}
-                  <div className="hidden lg:block relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                    <div className="relative bg-white/10 backdrop-blur-xl rounded-xl p-6 max-w-xs border border-white/20">
-                      <Coffee className="w-8 h-8 text-yellow-300 mb-3" />
-                      <p className="text-white/90 text-sm italic">"{motivationalQuote.text}"</p>
-                      <p className="text-white/70 text-xs mt-2">— {motivationalQuote.author}</p>
+                  </div>  
+                  
+                  {/* Motivational Quote Card with Enhanced Design */}
+                  <div className="hidden lg:block relative group max-w-xs">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 to-orange-700 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+                    <div className="relative glass-card rounded-3xl p-8 border-2 border-white/30 shadow-premium transform transition-all duration-500 hover:scale-105">
+                      <Coffee className="w-10 h-10 text-yellow-400 mb-4 animate-float-smooth" />
+                      <p className="text-white/95 text-base italic font-medium leading-relaxed mb-4">
+                        "{motivationalQuote.text}"
+                      </p>
+                      <p className="text-white/80 text-sm font-semibold">
+                        — {motivationalQuote.author}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -342,57 +318,59 @@ const loadRecommendedSkills = async () => {
             </div>
           </div>
 
-                    {/* Stats Grid with 3D Effects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 perspective-1000">
+          {/* Enhanced Stats Grid with Premium Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
             {[
-              { icon: BookOpen, label: 'Total Sessions', value: stats.totalSessions, color: 'blue', trend: '+12%', iconBg: 'from-blue-500 to-cyan-400' },
-              { icon: CheckCircle, label: 'Tasks Completed', value: stats.totalTasks, color: 'green', trend: '+5%', iconBg: 'from-green-500 to-emerald-400' },
-              { icon: Star, label: 'Average Rating', value: stats.averageRating.toFixed(1), suffix: ' ⭐', color: 'yellow', trend: '+0.2', iconBg: 'from-yellow-500 to-orange-400' },
-              { icon: Target, label: 'Skills Listed', value: stats.totalSkills, color: 'purple', trend: '+3', iconBg: 'from-purple-500 to-pink-400' },
+              { icon: BookOpen, label: 'Total Sessions', value: stats.totalSessions, color: 'blue', trend: '+12%', iconBg: 'from-blue-500 to-cyan-400', borderColor: 'border-blue-200/50 dark:border-blue-800/50' },
+              { icon: CheckCircle, label: 'Tasks Completed', value: stats.totalTasks, color: 'green', trend: '+5%', iconBg: 'from-green-500 to-emerald-400', borderColor: 'border-green-200/50 dark:border-green-800/50' },
+              { icon: Star, label: 'Average Rating', value: stats.averageRating.toFixed(1), suffix: ' ⭐', color: 'yellow', trend: '+0.2', iconBg: 'from-yellow-500 to-orange-400', borderColor: 'border-yellow-200/50 dark:border-yellow-800/50' },
+              { icon: Target, label: 'Skills Listed', value: stats.totalSkills, color: 'purple', trend: '+3', iconBg: 'from-purple-500 to-pink-400', borderColor: 'border-purple-200/50 dark:border-purple-800/50' },
               { 
                 icon: Coins, 
                 label: 'Skill Tokens', 
                 value: loadingTokens ? '...' : (tokenBalance?.balance || 0), 
                 color: 'indigo', 
                 trend: '+' + (tokenBalance?.total_earned || 0), 
-                iconBg: 'from-indigo-500 to-purple-400' 
+                iconBg: 'from-indigo-500 to-purple-400',
+                borderColor: 'border-indigo-200/50 dark:border-indigo-800/50'
               },
             ].map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <div
                   key={index}
-                  className="group relative preserve-3d transform-gpu hover:rotate-y-6 transition-all duration-500 cursor-pointer"
+                  className="group relative animate-scale-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* 3D Card Front */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl transform translate-z-[-10px] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
-                  <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${stat.iconBg} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
+                  {/* Premium Card with Modern Design */}
+                  <div className={`relative glass-card rounded-3xl p-7 shadow-premium hover:shadow-premium-lg transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 border-2 ${stat.borderColor} overflow-hidden`}>
+                    {/* Gradient Overlay on Hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${stat.iconBg} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
                     
                     <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 bg-gradient-to-r ${stat.iconBg} rounded-xl text-white shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-                          <Icon className="w-6 h-6" />
+                      <div className="flex items-start justify-between mb-5">
+                        <div
+                          className={`p-4 bg-gradient-to-br ${stat.iconBg} rounded-2xl text-white shadow-lg 
+                          transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                        >
+                          <Icon className="w-7 h-7" />
                         </div>
-                        <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 dark:bg-green-500/20 rounded-full">
-                          <TrendingUp className="w-3 h-3 text-green-500" />
-                          <span className="text-xs font-medium text-green-500">{stat.trend}</span>
-                        </div>
+                        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                          {stat.trend}
+                        </span>
                       </div>
                       
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm font-semibold mb-2 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                         {stat.label}
                       </p>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transform transition-transform">
+                      <p className="text-4xl font-black text-gray-900 dark:text-white mb-4 group-hover:scale-110 transform transition-transform origin-left">
                         {stat.value}{stat.suffix || ''}
                       </p>
                       
-                      {/* Progress Bar */}
-                      <div className="mt-4 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      {/* Animated Progress Bar */}
+                      <div className="h-2 bg-gray-100 dark:bg-gray-700/50 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full bg-gradient-to-r ${stat.iconBg} rounded-full transition-all duration-1000`}
+                          className={`h-full bg-gradient-to-r ${stat.iconBg} rounded-full transition-all duration-1000 ease-out`}
                           style={{ width: `${Math.min(100, (stat.value / 100) * 100)}%` }}
                         ></div>
                       </div>
@@ -403,52 +381,56 @@ const loadRecommendedSkills = async () => {
             })}
           </div>
 
-          {/* Quick Actions with Neumorphism */}
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl mb-8 border border-gray-200 dark:border-gray-700" data-testid="quick-actions">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Quick Actions
-              </h2>
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500 animate-pulse" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Recommended for you</span>
+          {/* Enhanced Quick Actions with Modern Design */}
+          <div className="glass-card rounded-3xl p-8 shadow-premium mb-10 border border-white/20 dark:border-gray-700/30" data-testid="quick-actions">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  Quick Actions
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">Recommended for you today</p>
+              </div>
+              <div className="flex items-center gap-3 px-5 py-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-full border border-yellow-200 dark:border-yellow-800">
+                <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+                <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Hot Today</span>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { to: '/skills', icon: PlusCircle, title: 'Add Skills', desc: 'List your expertise', color: 'indigo', gradient: 'from-indigo-500 to-purple-500', icon: PlusCircle },
-                { to: '/tasks', icon: Briefcase, title: 'Browse Tasks', desc: 'Find earning opportunities', color: 'green', gradient: 'from-green-500 to-emerald-500', icon: Briefcase },
-                { to: '/chatbot', icon: Bot, title: 'AI Assistant', desc: 'Get learning guidance', color: 'purple', gradient: 'from-purple-500 to-pink-500', icon: Bot },
+                { to: '/skills', icon: PlusCircle, title: 'Add Skills', desc: 'List your expertise', color: 'indigo', gradient: 'from-indigo-500 via-indigo-600 to-purple-600' },
+                { to: '/tasks', icon: Briefcase, title: 'Browse Tasks', desc: 'Find earning opportunities', color: 'green', gradient: 'from-green-500 via-green-600 to-emerald-600' },
+                { to: '/chatbot', icon: Bot, title: 'AI Assistant', desc: 'Get learning guidance', color: 'purple', gradient: 'from-purple-500 via-purple-600 to-pink-600' },
               ].map((action, index) => {
                 const Icon = action.icon;
                 return (
                   <Link
                     key={index}
                     to={action.to}
-                    className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 border-2 border-gray-200 dark:border-gray-600 hover:border-transparent transition-all duration-500 hover:shadow-2xl"
+                    className="group relative overflow-hidden rounded-2xl p-8 glass-card hover:shadow-premium-lg transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 border-2 border-transparent hover:border-white/30"
                     data-testid={`action-${action.title.toLowerCase().replace(' ', '-')}`}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-r ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                    {/* Animated Gradient Background */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
                     
                     <div className="relative z-10">
-                      <div className="relative mb-4">
-                        <div className={`w-14 h-14 bg-${action.color}-100 dark:bg-${action.color}-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                          <Icon className={`w-7 h-7 text-${action.color}-600 dark:text-${action.color}-400 group-hover:text-white transition-colors`} />
+                      <div className="relative mb-6">
+                        <div className={`w-16 h-16 bg-gradient-to-br ${action.gradient} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg`}>
+                          <Icon className={`w-8 h-8 text-white`} />
                         </div>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></div>
+                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 rounded-full border-3 border-white dark:border-gray-800 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
                       
-                      <h3 className={`font-bold text-gray-900 dark:text-white mb-1 text-lg group-hover:text-white transition-colors`}>
+                      <h3 className={`font-black text-gray-900 dark:text-white mb-2 text-2xl group-hover:text-white transition-colors`}>
                         {action.title}
                       </h3>
-                      <p className={`text-sm text-gray-600 dark:text-gray-400 group-hover:text-white/90 transition-colors`}>
+                      <p className={`text-base text-gray-600 dark:text-gray-400 group-hover:text-white/90 transition-colors font-medium`}>
                         {action.desc}
                       </p>
                       
                       {/* Animated Arrow */}
-                      <div className="absolute bottom-6 right-6 transform translate-x-0 group-hover:translate-x-1 transition-transform">
-                        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                      <div className="absolute bottom-8 right-8 transform translate-x-0 group-hover:translate-x-2 transition-transform duration-500">
+                        <ArrowRight className="w-6 h-6 text-gray-400 group-hover:text-white" />
                       </div>
                     </div>
                   </Link>
@@ -457,15 +439,18 @@ const loadRecommendedSkills = async () => {
             </div>
           </div>
 
-          {/* Activity and Recommendations Grid */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-8">
-            {/* Recent Activity */}
-            <div className="lg:col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Recent Activity
-                </h2>
-                <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+          {/* Enhanced Activity and Recommendations Grid */}
+          <div className="grid lg:grid-cols-3 gap-8 mb-10">
+            {/* Recent Activity with Modern Cards */}
+            <div className="lg:col-span-2 glass-card rounded-3xl p-8 shadow-premium border border-white/20 dark:border-gray-700/30">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                    Recent Activity
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">Your latest interactions</p>
+                </div>
+                <button className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
                   View all
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -473,27 +458,27 @@ const loadRecommendedSkills = async () => {
               
               <div className="space-y-4">
                 {recentActivities.map((activity, index) => {
-                  const Icon = activity.icon;
+                  const Icon = activity.icon || Activity;
                   return (
                     <div
                       key={index}
-                      className="group relative overflow-hidden p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:shadow-lg transition-all duration-300 animate-slide-in-up"
+                      className="group relative overflow-hidden p-6 glass-card rounded-2xl hover:shadow-lg transition-all duration-500 animate-scale-in border border-gray-100 dark:border-gray-700/50 hover:-translate-y-1"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                       
-                      <div className="relative flex items-center gap-4">
-                        <div className={`p-3 bg-${activity.color}-100 dark:bg-${activity.color}-900/30 rounded-xl group-hover:scale-110 transition-transform`}>
-                          <Icon className={`w-5 h-5 text-${activity.color}-600 dark:text-${activity.color}-400`} />
+                      <div className="relative flex items-center gap-5">
+                        <div className={`p-4 bg-gradient-to-br ${activity.color === 'blue' ? 'from-blue-500 to-cyan-400' : activity.color === 'green' ? 'from-green-500 to-emerald-400' : activity.color === 'purple' ? 'from-purple-500 to-pink-400' : 'from-yellow-500 to-orange-400'} rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg`}>
+                          <Icon className="w-6 h-6 text-white" />
                         </div>
                         
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{activity.time}</p>
+                          <p className="font-bold text-gray-900 dark:text-white text-lg mb-1">{activity.title}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{activity.timeAgo || activity.time}</p>
                         </div>
                         
-                        <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                          <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                        <button className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                          <MoreHorizontal className="w-5 h-5 text-gray-500" />
                         </button>
                       </div>
                     </div>
@@ -501,278 +486,276 @@ const loadRecommendedSkills = async () => {
                 })}
               </div>
 
-              {/* Activity Chart */}
-              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              
-                
-            
+              {/* Activity Chart Placeholder */}
+              <div className="mt-8 p-6 glass-card rounded-2xl border border-gray-100 dark:border-gray-700/50">
               </div>
             </div>
-
-            {/* Right Sidebar */}
-            <div className="space-y-6">
-              {/* Achievement Card */}
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+            
+            {/* Enhanced Right Sidebar */}
+            <div className="space-y-8">
+              {/* Premium Achievement Card */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-1 shadow-premium-lg group">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 translate-y-full group-hover:translate-y-0 transition-transform duration-700"></div>
                 
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <Crown className="w-8 h-8 text-yellow-300" />
-                    <span className="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-sm">Level 5</span>
+                <div className="relative glass-card rounded-[22px] p-8 text-white">
+                  <div className="flex items-center justify-between mb-6">
+                    <Crown className="w-10 h-10 text-yellow-300 animate-float-smooth" />
+                    <span className="px-4 py-2 bg-white/25 backdrop-blur-md rounded-full text-sm font-bold">Level 5</span>
                   </div>
                   
-                  <h3 className="text-xl font-bold mb-2">Skill Seeker</h3>
-                  <p className="text-indigo-100 text-sm mb-4">Complete 10 more sessions to reach next level</p>
+                  <h3 className="text-2xl font-black mb-3">Skill Seeker</h3>
+                  <p className="text-white/90 text-sm mb-6 font-medium">Complete 10 more sessions to reach next level</p>
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm font-semibold">
                       <span>Progress to Level 6</span>
                       <span>65%</span>
                     </div>
-                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-white rounded-full animate-progress" style={{ width: '65%' }}></div>
+                    <div className="h-3 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                      <div className="h-full bg-gradient-to-r from-white to-yellow-300 rounded-full animate-progress shadow-lg" style={{ width: '65%' }}></div>
                     </div>
                   </div>
                   
-                  <div className="mt-4 flex items-center gap-2">
-                    <Medal className="w-4 h-4 text-yellow-300" />
-                    <span className="text-sm">3 achievements this month</span>
+                  <div className="mt-6 flex items-center gap-3 p-4 bg-white/15 backdrop-blur-md rounded-2xl">
+                    <Medal className="w-6 h-6 text-yellow-300" />
+                    <span className="text-sm font-semibold">3 achievements this month</span>
                   </div>
                 </div>
               </div>
 
-              {/* Recommended Skills */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-yellow-500" />
+              {/* Enhanced Recommended Skills */}
+              <div className="glass-card rounded-3xl p-8 shadow-premium border border-white/20 dark:border-gray-700/30">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                  <Sparkles className="w-7 h-7 text-yellow-500" />
                   Recommended Skills
                 </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">Curated for you</p>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {recommendedSkills.slice(0, 4).map((skill, index) => {
                     const Icon = skill.icon;
                     return (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:shadow-md transition-all group cursor-pointer"
+                        className="group flex items-center justify-between p-5 glass-card rounded-2xl hover:shadow-lg transition-all cursor-pointer border border-gray-100 dark:border-gray-700/50 hover:-translate-y-1 duration-300"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 bg-gradient-to-r ${skill.color} rounded-lg text-white`}>
-                            <Icon className="w-4 h-4" />
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`p-3 bg-gradient-to-br ${skill.color} rounded-xl text-white transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500 shadow-lg`}>
+                            <Icon className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{skill.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{skill.students} students</p>
+                            <p className="font-bold text-gray-900 dark:text-white text-base">{skill.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{skill.students} students</p>
                           </div>
                         </div>
-                        <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                          <PlusCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <button className="p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all transform hover:scale-110">
+                          <PlusCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                         </button>
                       </div>
                     );
                   })}
                 </div>
                 
-                <button className="w-full mt-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline flex items-center justify-center gap-1">
+                <button className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold rounded-2xl hover:shadow-premium-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2">
                   View all recommendations
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
 
-               {/* Calendar Widget */}
+              {/* Calendar Widget */}
               <CalendarWidget userId={user?.id} />
             </div>
           </div>
 
-          {/* Bottom Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-yellow-400 to-orange-500 p-1 group">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
-            <div className="relative bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl p-6 text-white">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                    <Gift className="w-6 h-6 text-white" />
+          {/* Premium Bottom Banner */}
+          <div className="relative overflow-hidden rounded-3xl p-1 shadow-premium-lg group">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gradient"></div>
+            <div className="relative bg-gradient-to-r from-yellow-500 via-orange-600 to-red-600 rounded-[22px] p-8 text-white">
+              <div className="flex items-center justify-between flex-wrap gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-white/25 backdrop-blur-md rounded-2xl flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
+                    <Gift className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">🎉 Special Offer!</h3>
-                    <p className="text-yellow-100">Get 20% off on premium mentorship sessions this week</p>
+                    <h3 className="text-3xl font-black mb-2">🎉 Special Offer!</h3>
+                    <p className="text-white/95 text-lg font-medium">Get 20% off on premium mentorship sessions this week</p>
                   </div>
                 </div>
-                <button className="px-6 py-3 bg-white text-orange-600 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all">
+                <button className="px-8 py-4 bg-white text-orange-600 rounded-2xl font-black text-lg hover:shadow-2xl transform hover:scale-110 transition-all duration-300">
                   Claim Offer
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        <style jsx>{`
+          @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+          }
+          
+          @keyframes float-slow {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            50% { transform: translate(20px, -20px) scale(1.05); }
+          }
+          
+          @keyframes float-particle {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+          }
+          
+          @keyframes slide-in-right {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes slide-in-up {
+            from {
+              transform: translateY(20px);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          .animate-blob {
+            animation: blob 7s infinite;
+          }
+          
+          .animate-float-slow {
+            animation: float-slow 8s ease-in-out infinite;
+          }
+          
+          .animate-float-particle {
+            animation: float-particle 8s ease-in-out infinite;
+          }
+          
+          .animate-slide-in-right {
+            animation: slide-in-right 0.5s ease-out forwards;
+          }
+          
+          .animate-slide-in-up {
+            animation: slide-in-up 0.5s ease-out forwards;
+            opacity: 0;
+          }
+          
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+          
+          .animation-delay-1000 {
+            animation-delay: 1s;
+          }
+          
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+          }
+          
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+          
+          @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          
+          .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient 3s ease infinite;
+          }
+          
+          @keyframes progress {
+            0% { width: 0%; }
+          }
+          
+          .animate-progress {
+            animation: progress 1s ease-out forwards;
+          }
+          
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 0.75; }
+            50% { opacity: 1; }
+          }
+          
+          .animate-pulse-slow {
+            animation: pulse-slow 3s ease-in-out infinite;
+          }
+          
+          /* 3D Effects */
+          .perspective-1000 {
+            perspective: 1000px;
+          }
+          
+          .preserve-3d {
+            transform-style: preserve-3d;
+          }
+          
+          .rotate-y-6 {
+            transform: rotateY(6deg);
+          }
+          
+          .transform-gpu {
+            transform: translateZ(0);
+          }
+          
+          .transform-z-[-10px] {
+            transform: translateZ(-10px);
+          }
+          
+          /* Dark mode transitions */
+          .dark {
+            color-scheme: dark;
+          }
+          
+          /* Custom scrollbar */
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          
+          ::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+          }
+          
+          ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+          }
+        `}</style>
+
+        {/* User Profile Modal */}
+        {showProfileModal && selectedUserId && (
+          <UserProfileModal
+            userId={selectedUserId}
+            isOpen={showProfileModal}
+            onClose={() => {
+              setShowProfileModal(false);
+              setSelectedUserId(null);
+            }}
+          />
+        )}
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        
-        @keyframes float-slow {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          50% { transform: translate(20px, -20px) scale(1.05); }
-        }
-        
-        @keyframes float-particle {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(20px, -20px); }
-        }
-        
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes slide-in-up {
-          from {
-            transform: translateY(20px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        
-        .animate-float-slow {
-          animation: float-slow 8s ease-in-out infinite;
-        }
-        
-        .animate-float-particle {
-          animation: float-particle 8s ease-in-out infinite;
-        }
-        
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out forwards;
-        }
-        
-        .animate-slide-in-up {
-          animation: slide-in-up 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        
-        .animation-delay-1000 {
-          animation-delay: 1s;
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-        
-        @keyframes progress {
-          0% { width: 0%; }
-        }
-        
-        .animate-progress {
-          animation: progress 1s ease-out forwards;
-        }
-        
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.75; }
-          50% { opacity: 1; }
-        }
-        
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
-        
-        /* 3D Effects */
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-        
-        .preserve-3d {
-          transform-style: preserve-3d;
-        }
-        
-        .rotate-y-6 {
-          transform: rotateY(6deg);
-        }
-        
-        .transform-gpu {
-          transform: translateZ(0);
-        }
-        
-        .transform-z-[-10px] {
-          transform: translateZ(-10px);
-        }
-        
-        /* Dark mode transitions */
-        .dark {
-          color-scheme: dark;
-        }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.3);
-          border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.5);
-        }
-      `}</style>
-
-       {/* User Profile Modal */}
-      {showProfileModal && selectedUserId && (
-        <UserProfileModal
-          userId={selectedUserId}
-             isOpen={showProfileModal}
-          onClose={() => {
-            setShowProfileModal(false);
-            setSelectedUserId(null);
-          }}
-        />
-      )}
     </div>
   );
 };
