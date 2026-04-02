@@ -47,8 +47,8 @@ manager = ConnectionManager()
 
 
 def _validate_room_type(room_type: str):
-    if room_type not in ["task", "session"]:
-        raise HTTPException(status_code=400, detail="room_type must be either 'task' or 'session'")
+      if room_type not in ["task", "session", "exchange"]:
+        raise HTTPException(status_code=400, detail="room_type must be 'task', 'session', or 'exchange'")
 
 
 def _room_key(room_type: str, room_id: str) -> str:
@@ -112,7 +112,7 @@ async def realtime_ws(websocket: WebSocket, room_type: str, room_id: str, token:
         await websocket.close(code=1008)
         return
 
-    if room_type not in ["task", "session"]:
+    if room_type not in ["task", "session", "exchange"]:
         await websocket.close(code=1003)
         return
 
