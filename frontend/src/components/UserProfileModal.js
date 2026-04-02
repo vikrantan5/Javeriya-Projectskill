@@ -39,7 +39,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }) => {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative h-32 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+        <div className="relative h-32 bg-gradient-to-r bg-gradient-to-br from-yellow-200 via-orange-200 to-teal-200">
           <div className="absolute inset-0 bg-black/20"></div>
           <button
             onClick={onClose}
@@ -78,7 +78,7 @@ const UserProfileModal = ({ userId, isOpen, onClose }) => {
                     className="w-24 h-24 rounded-2xl border-4 border-white dark:border-gray-800 object-cover shadow-xl"
                   />
                 ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl border-4 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-3xl shadow-xl">
+                  <div className="w-24 h-24 bg-gradient-to-br from-yellow-200 via-orange-200 to-teal-200 rounded-2xl border-4 border-white dark:border-gray-800 flex items-center justify-center text-white font-bold text-3xl shadow-xl">
                     {(profile.profile_data?.full_name || profile.profile_data?.username || 'U').charAt(0).toUpperCase()}
                   </div>
                 )}
