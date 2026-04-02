@@ -145,12 +145,12 @@ const LandingPage = () => {
             {/* Logo */}
             <div className="flex items-center gap-3 group cursor-pointer">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-neon-cyan transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                <div className="w-12 h-12 bg-gradient-to-br  from-teal-400 via-red-400 to-yellow-400 rounded-2xl flex items-center justify-center shadow-neon-cyan transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                   <GraduationCap className="w-7 h-7 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-black animate-pulse"></div>
               </div>
-              <span className="text-3xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent tracking-tight">
+              <span className="text-3xl font-black bg-gradient-to-r from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent tracking-tight">
                 TalentConnect
               </span>
             </div>
@@ -187,7 +187,7 @@ const LandingPage = () => {
                   </Link>
                   <Link
                     to="/register"
-                    className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white px-8 py-3 rounded-2xl font-black hover:shadow-neon-cyan transition-all duration-300 transform hover:scale-105"
+                    className="group relative overflow-hidden bg-gradient-to-r from-teal-500 via-red-500 to-yellow-500 text-white px-8 py-3 rounded-2xl font-black hover:shadow-neon-cyan transition-all duration-300 transform hover:scale-105"
                     data-testid="register-link"
                   >
                     <span className="relative z-10 flex items-center gap-2">
@@ -219,7 +219,7 @@ const LandingPage = () => {
             {/* Main Heading with Gradient Animation */}
             <h1 className="text-7xl md:text-8xl lg:text-9xl font-black mb-8 leading-none animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <span className="block text-white mb-2">Learn Together</span>
-              <span className="block bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient-x">
+              <span className="block bg-gradient-to-r from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent animate-gradient-x">
                 Grow Together
               </span>
             </h1>
@@ -238,7 +238,7 @@ const LandingPage = () => {
                 <>
                   <Link
                     to="/register"
-                    className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white px-12 py-6 rounded-2xl text-xl font-black hover:shadow-neon-cyan transition-all duration-300 transform hover:scale-110"
+                    className="group relative overflow-hidden bg-gradient-to-r from-teal-500 via-red-500 to-yellow-500 text-white px-12 py-6 rounded-2xl text-xl font-black hover:shadow-neon-cyan transition-all duration-300 transform hover:scale-110"
                     data-testid="hero-cta-button"
                   >
                     <span className="relative z-10 flex items-center gap-3">
@@ -288,7 +288,7 @@ const LandingPage = () => {
             </div>
             <h2 className="text-6xl font-black text-white mb-6">
               Everything You Need to{' '}
-              <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r  from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
                 Succeed
               </span>
             </h2>
@@ -353,7 +353,7 @@ const LandingPage = () => {
             </div>
             <h2 className="text-6xl font-black text-white mb-6">
               Get Started in{' '}
-              <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r  from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
                 3 Simple Steps
               </span>
             </h2>
@@ -405,7 +405,7 @@ const LandingPage = () => {
             </div>
             <h2 className="text-6xl font-black text-white mb-6">
               Loved by{' '}
-              <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r  from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
                 Students Worldwide
               </span>
             </h2>
@@ -462,7 +462,7 @@ const LandingPage = () => {
             <div className="relative z-10">
               <h2 className="text-6xl font-black text-white mb-6">
                 Ready to{' '}
-                <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r  from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
                   Transform
                 </span>
                 {' '}Your Learning?
@@ -492,10 +492,10 @@ const LandingPage = () => {
       <footer className="relative py-12 px-4 border-t border-gray-800">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br  from-teal-400 via-red-400 to-yellow-400 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <span className="text-2xl font-black bg-gradient-to-r  from-teal-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
               TalentConnect
             </span>
           </div>
