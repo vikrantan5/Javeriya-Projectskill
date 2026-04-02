@@ -586,11 +586,18 @@ export const realtimeService = {
     return response.data;
   },
 
-  buildWebSocketUrl: (roomType, roomId, token) => {
+   buildWebSocketUrl: (roomType, roomId, token) => {
     const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    console.log('🔧 buildWebSocketUrl - API_BASE_URL:', API_BASE_URL);
+    console.log('🔧 process.env.REACT_APP_BACKEND_URL:', process.env.REACT_APP_BACKEND_URL);
+    console.log('🔧 window.location.origin:', window.location.origin);
+    
     const wsProtocol = API_BASE_URL.startsWith('https') ? 'wss' : 'ws';
     const baseUrl = API_BASE_URL.replace(/^https?:\/\//, '');
-    return `${wsProtocol}://${baseUrl}/api/realtime/ws/${roomType}/${roomId}?token=${token}`;
+    const fullUrl = `${wsProtocol}://${baseUrl}/api/realtime/ws/${roomType}/${roomId}?token=${token}`;
+    
+    console.log('🔧 Built WebSocket URL:', fullUrl);
+    return fullUrl;
   },
 };
 

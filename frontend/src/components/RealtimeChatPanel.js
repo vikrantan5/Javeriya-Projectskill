@@ -38,22 +38,28 @@ const RealtimeChatPanel = ({ roomType, roomId, currentUserId, title = 'Realtime 
     const connect = () => {
       try {
         const wsUrl = realtimeService.buildWebSocketUrl(roomType, roomId, token);
+        console.log('🔌 RealtimeChatPanel connecting to:', wsUrl);
+        console.log('   Room Type:', roomType, 'Room ID:', roomId);
+        
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {
           if (!isMounted) return;
+          console.log('✅ RealtimeChatPanel WebSocket connected');
           setConnected(true);
           setConnectionError('');
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           if (!isMounted) return;
+          console.log('🔌 RealtimeChatPanel WebSocket closed - Code:', event.code, 'Reason:', event.reason);
           setConnected(false);
         };
 
-        ws.onerror = () => {
+        ws.onerror = (error) => {
           if (!isMounted) return;
+          console.error('❌ RealtimeChatPanel WebSocket error:', error);
           setConnectionError('Live chat connection failed');
         };
 
@@ -61,16 +67,18 @@ const RealtimeChatPanel = ({ roomType, roomId, currentUserId, title = 'Realtime 
           if (!isMounted) return;
           try {
             const payload = JSON.parse(event.data);
+            console.log('📨 RealtimeChatPanel received:', payload);
             if (payload?.event === 'error') {
               setConnectionError(payload?.detail || 'Realtime message error');
               return;
             }
             setMessages((prev) => [...prev, payload]);
           } catch (_err) {
-            // ignore malformed ws payloads
+            console.error('Failed to parse message:', _err);
           }
         };
-      } catch (_error) {
+      } catch (error) {
+        console.error('❌ Failed to initialize WebSocket:', error);
         setConnectionError('Unable to initialize live chat');
       }
     };

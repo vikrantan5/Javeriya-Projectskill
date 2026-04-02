@@ -102,6 +102,8 @@ async def get_realtime_history(
 
 @router.websocket("/ws/{room_type}/{room_id}")
 async def realtime_ws(websocket: WebSocket, room_type: str, room_id: str, token: str = Query(...)):
+      # Accept the WebSocket connection FIRST before any validation
+    await websocket.accept()
     try:
         token_data = decode_access_token(token)
         user_id = token_data.user_id
@@ -117,7 +119,10 @@ async def realtime_ws(websocket: WebSocket, room_type: str, room_id: str, token:
         return
 
     key = _room_key(room_type, room_id)
-    await manager.connect(key, user_id, websocket)
+     # Add user to the room (no need to accept again, already accepted above)
+    if key not in manager.rooms:
+        manager.rooms[key] = {}
+    manager.rooms[key][user_id] = websocket
 
     join_event = {
         "id": str(uuid.uuid4()),
