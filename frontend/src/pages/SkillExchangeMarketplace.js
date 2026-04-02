@@ -154,7 +154,7 @@ const SkillExchangeMarketplace = () => {
     setLoading(false);
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-sky-50/40 to-emerald-50/30 dark:from-gray-900 dark:via-sky-950 dark:to-emerald-950" data-testid="skill-exchange-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 dark:from-gray-900 dark:via-sky-950 dark:to-emerald-950" data-testid="skill-exchange-page">
       <Navbar />
 
       {toast.show && (
@@ -181,7 +181,7 @@ const SkillExchangeMarketplace = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <form onSubmit={handleCreate} className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4" data-testid="exchange-create-form">
+          <form onSubmit={handleCreate} className="lg:col-span-1 bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4" data-testid="exchange-create-form">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Plus className="w-5 h-5" />
               Create Exchange Task
@@ -234,7 +234,7 @@ const SkillExchangeMarketplace = () => {
             </button>
           </form>
 
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <div className="lg:col-span-2 bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl shadow-lg p-6">
             <div className="flex items-center gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-3">
               <button
                 onClick={() => setActiveTab('marketplace')}

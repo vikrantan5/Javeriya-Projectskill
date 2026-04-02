@@ -503,14 +503,14 @@ const Profile = () => {
   ];
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30'}`} data-testid="profile-page">
+    <div className={`min-h-screen  bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100`} data-testid="profile-page">
       <Navbar darkMode={darkMode} setDarkMode={setDarkMode} />
       
       {/* Settings Sidebar */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 bg-black/50  backdrop-blur-sm z-50" onClick={() => setShowSettings(false)}>
           <div className="absolute right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-2xl p-6 animate-slide-left" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center bg-gradient-to-r from-amber-100 to-pink-100 justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h3>
               <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -556,7 +556,7 @@ const Profile = () => {
       )}
 
       {/* Cover Image */}
-      <div className="relative h-64 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+      <div className="relative h-64 bg-gradient-to-br from-sky-200 via-cyan-200 to-teal-200 overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         {coverImage && (
           <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
@@ -656,7 +656,7 @@ const Profile = () => {
             {/* User Info */}
             <div className="mb-4 md:mb-0">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">{user?.full_name || user?.username}</h1>
+                <h1 className="text-3xl font-bold text-gray-400 ">{user?.full_name || user?.username}</h1>
                 {user?.is_verified && (
                   <BadgeCheck className="w-6 h-6 text-blue-400" />
                 )}
@@ -686,7 +686,7 @@ const Profile = () => {
           <div className="flex gap-3 mt-4 md:mt-0">
             <button
               onClick={handleCopyProfileLink}
-              className="p-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="p-3 bg-white/20 backdrop-blur  rounded-xl text-white hover:bg-white/30 transition-all"
               title="Copy profile link"
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -694,7 +694,7 @@ const Profile = () => {
             
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 px-4 py-3 bg-white/20 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 backdrop-blur rounded-xl text-white hover:bg-white/30 transition-all"
               data-testid="edit-profile-button"
             >
               {isEditing ? <X className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
@@ -715,7 +715,7 @@ const Profile = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all group">
+              <div key={index} className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all group">
                 <div className="flex items-center justify-between mb-2">
                   <div className={`p-2 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-lg`}>
                     <Icon className={`w-5 h-5 text-${stat.color}-600 dark:text-${stat.color}-400`} />
@@ -736,7 +736,7 @@ const Profile = () => {
               {/* Trust Score & Token Balance Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Trust Score Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6" data-testid="trust-score-card">
+          <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-2xl shadow-xl p-6" data-testid="trust-score-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-600" />
@@ -794,7 +794,7 @@ const Profile = () => {
           </div>
 
           {/* Token Balance Card */}
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-6 text-white" data-testid="token-balance-card">
+          <div className="bg-gradient-to-br from-indigo-400 to-purple-400 rounded-2xl shadow-xl p-6 text-white" data-testid="token-balance-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <Coins className="w-5 h-5" />
@@ -869,7 +869,7 @@ const Profile = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
+                className={`flex items-center bg-gradient-to-br from-red-200 via-blue-200 to-yellow-200 gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -888,7 +888,7 @@ const Profile = () => {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Bio Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <User className="w-5 h-5 text-indigo-600" />
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">About Me</h3>
@@ -910,7 +910,7 @@ const Profile = () => {
                 </div>
 
                 {/* Personal Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personal Information</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     {[
@@ -947,7 +947,7 @@ const Profile = () => {
                 </div>
 
                 {/* Social Links */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Social Links</h3>
                   <div className="space-y-3">
                     {[
@@ -1067,7 +1067,7 @@ const Profile = () => {
                 </div>
 
                 {/* Languages */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Languages</h3>
                   <div className="space-y-3">
                     {profileData.languages.map((lang, index) => (
@@ -1077,10 +1077,10 @@ const Profile = () => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Interests */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Interests</h3>
                   <div className="flex flex-wrap gap-2">
                     {profileData.interests.map((interest, index) => (
@@ -1089,7 +1089,7 @@ const Profile = () => {
                       </span>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
                         {activeTab === 'payment' && (
@@ -1299,7 +1299,7 @@ const Profile = () => {
           {/* Right Sidebar */}
           <div className="space-y-6">
                        {/* Profile Completion */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Completion</h3>
               <div className="relative pt-1">
                 <div className="flex mb-2 items-center justify-between">
@@ -1357,7 +1357,7 @@ const Profile = () => {
             
             {/* Connection Requests */}
             {connectionRequests.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+              <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Connection Requests</h3>
                 <div className="space-y-3">
                   {connectionRequests.slice(0, 3).map((request) => (
@@ -1446,7 +1446,7 @@ const Profile = () => {
             </div> */}
 
                        {/* Upcoming Sessions */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Sessions</h3>
               <div className="space-y-3">
                 {upcomingSessions.length > 0 ? (
@@ -1490,7 +1490,7 @@ const Profile = () => {
             </div>
 
             {/* Recommended Connections */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div className="bg-gradient-to-br from-sky-200 via-red-200 to-teal-200 dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-yellow-500" />
                 Recommended for You

@@ -96,7 +96,7 @@ const RoadmapPlanner = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-cyan-50/30 dark:from-gray-900 dark:via-indigo-950 dark:to-cyan-950" data-testid="roadmap-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 dark:from-gray-900 dark:via-indigo-950 dark:to-cyan-950" data-testid="roadmap-page">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -117,7 +117,7 @@ const RoadmapPlanner = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <form onSubmit={handleGenerateRoadmap} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4" data-testid="roadmap-generate-form">
+          <form onSubmit={handleGenerateRoadmap} className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4" data-testid="roadmap-generate-form">
             <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
               <Brain className="w-5 h-5 text-indigo-600" />
               Generate New Roadmap
@@ -155,7 +155,7 @@ const RoadmapPlanner = () => {
             </div>
           </form>
 
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg" data-testid="roadmap-results-panel">
+          <div className="lg:col-span-2 bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl p-6 shadow-lg" data-testid="roadmap-results-panel">
             <div className="flex items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Map className="w-5 h-5 text-indigo-600" />

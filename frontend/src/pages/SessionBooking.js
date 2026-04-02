@@ -304,7 +304,7 @@ const SessionBooking = () => {
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled').slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="session-booking-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="session-booking-page">
       <Navbar />
       
       {/* Animated Background */}
@@ -342,7 +342,7 @@ const SessionBooking = () => {
           {quickStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group">
+              <div key={index} className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group">
                 <div className="flex items-center justify-between mb-2">
                   <div className={`p-2 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-lg`}>
                     <Icon className={`w-5 h-5 text-${stat.color}-600 dark:text-${stat.color}-400`} />
@@ -388,7 +388,7 @@ const SessionBooking = () => {
         )}
 
         {/* Search and Filter */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mb-8">
+        <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl shadow-lg p-4 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -430,12 +430,12 @@ const SessionBooking = () => {
             <div className="relative">
               <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 bg-white dark:bg-gray-800 rounded-full animate-pulse"></div>
+                <div className="w-8 h-8 bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
         ) : filteredSessions.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-lg" data-testid="no-sessions">
+          <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl p-12 text-center shadow-lg" data-testid="no-sessions">
             <div className="w-24 h-24 mx-auto bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
               <Calendar className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
             </div>

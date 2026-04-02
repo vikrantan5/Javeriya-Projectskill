@@ -90,7 +90,7 @@ const Leaderboard = () => {
   const currentCategory = categories.find(c => c.id === activeCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="leaderboard-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="leaderboard-page">
       <Navbar />
 
       {/* Animated Background */}
@@ -183,7 +183,7 @@ const Leaderboard = () => {
             </button>
           </div>
         ) : leaderboard.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-16 text-center">
+          <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl p-16 text-center">
             <Trophy className="w-24 h-24 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               No Data Available
@@ -211,7 +211,7 @@ const Leaderboard = () => {
                       index === 0 ? 'scale-110' : ''
                     }`}
                   >
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all">
+                    <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all">
                       {/* Rank Badge */}
                       <div className="flex justify-center mb-4">
                         <div className={`${rankBadge.bg} rounded-full p-4`}>
@@ -222,7 +222,7 @@ const Leaderboard = () => {
                       {/* Avatar */}
                       <div className="flex justify-center mb-4">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1">
-                          <div className="w-full h-full rounded-full bg-white dark:bg-gray-700 flex items-center justify-center">
+                          <div className="w-full h-full rounded-full bg-gradient-to-br from-red-200 via-rose-200 to-purple-200 dark:bg-gray-700 flex items-center justify-center">
                             <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                               {entry.username?.charAt(0).toUpperCase()}
                             </span>
@@ -292,8 +292,8 @@ const Leaderboard = () => {
             </div>
 
             {/* Rest of Leaderboard */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-              <div className="p-6 bg-gradient-to-r from-indigo-600 to-purple-600">
+            <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+              <div className="p-6 bg-gradient-to-r from-red-600 to-yellow-600">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                   <Users className="w-6 h-6" />
                   Full Rankings

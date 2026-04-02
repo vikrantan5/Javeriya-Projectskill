@@ -207,7 +207,7 @@ const Dashboard = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <Navbar />
           <div className="flex items-center justify-center h-[80vh]">
-            <div className="relative">
+            <div className="relative">  
               {/* Animated Loading Spinner */}
               <div className="w-24 h-24 relative">
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900/30"></div>
@@ -231,27 +231,26 @@ const Dashboard = () => {
 
   return (
     <div className={`${darkMode ? 'dark' : ''}`}>
-     <div className="min-h-screen relative bg-user-gradient overflow-hidden" data-testid="dashboard-page">
-        {/* Premium Grid Overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyMTcsMTE5LDYsMC4wOCkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-40"></div>
+      <div className="min-h-screen relative bg-user-gradient " data-testid="dashboard-page">
+        {/* Overlay for better content visibility */}
+        <div className="absolute inset-0 bg-white/40 dark:bg-gray-900/60 backdrop-blur-sm"></div>
         
         <div className="relative z-10">
           <Navbar />
         </div>
         
-            {/* Premium Floating Orbs */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-20 right-20 w-96 h-96 bg-amber-300/15 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth"></div>
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-orange-300/15 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth" style={{animationDelay: '2s'}}></div>
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-yellow-300/10 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth" style={{animationDelay: '4s'}}></div>
+        {/* Subtle Animated Accents */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100">
+          <div className="absolute top-20 right-20 w-72 h-72 bg-indigo-400/10 dark:bg-indigo-400/5 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth"></div>
+          <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-400/10 dark:bg-purple-400/5 rounded-full mix-blend-multiply filter blur-3xl animate-float-smooth" style={{animationDelay: '2s'}}></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 z-10">
-                 {/* Welcome Section with Premium Glass Effect */}
-          <div className="relative mb-10 group animate-slide-up" data-testid="welcome-section">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 rounded-3xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 p-1 shadow-warm-glow">
-              <div className="relative glass-card-user rounded-[22px] p-8 md:p-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ">
+          {/* Welcome Section with Enhanced Glass Effect */}
+          <div className="relative mb-10 group animate-scale-in" data-testid="welcome-section">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500"></div>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-1 shadow-premium-lg">
+              <div className="relative glass-card rounded-[22px] p-8 md:p-10">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-700/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
                 
@@ -271,26 +270,26 @@ const Dashboard = () => {
                             {greeting}, {user?.full_name || user?.username}!
                           </h1>
                         </div>
-                        <p className="text-xl text-white/90 font-medium">
+                        <p className="text-xl text-[#333333] font-medium">
                           Ready to level up your skills today? ✨
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-4 mt-6">
-                      <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-full text-white text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                      <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-full text-black text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
                         <Calendar className="w-5 h-5" />
                         Member since {new Date(user?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                       </div>
-                      <div className="px-5 py-2.5 bg-yellow-400/30 backdrop-blur-md rounded-full text-yellow-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                      <div className="px-5 py-2.5 bg-yellow-400/30 backdrop-blur-md rounded-full text-yellow-600 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
                         <Flame className="w-5 h-5" />
                         {stats.totalSessions} day streak
                       </div>
-                      <div className="px-5 py-2.5 bg-purple-400/30 backdrop-blur-md rounded-full text-purple-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
+                      <div className="px-5 py-2.5 bg-purple-400/30 backdrop-blur-md rounded-full text-purple-600 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300">
                         <Trophy className="w-5 h-5" />
                         {stats.averageRating > 0 ? `${stats.averageRating} ⭐ Rating` : 'New Member'}
                       </div>
-                      <div className="px-5 py-2.5 bg-green-400/30 backdrop-blur-md rounded-full text-green-50 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300" data-testid="token-balance-badge">
+                      <div className="px-5 py-2.5 bg-green-400/30 backdrop-blur-md rounded-full text-green-600 text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform duration-300" data-testid="token-balance-badge">
                         <Coins className="w-5 h-5" />
                         {loadingTokens ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -306,10 +305,10 @@ const Dashboard = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-600 to-orange-700 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                     <div className="relative glass-card rounded-3xl p-8 border-2 border-white/30 shadow-premium transform transition-all duration-500 hover:scale-105">
                       <Coffee className="w-10 h-10 text-yellow-400 mb-4 animate-float-smooth" />
-                      <p className="text-white/95 text-base italic font-medium leading-relaxed mb-4">
+                      <p className="text-black text-base italic font-medium leading-relaxed mb-4">
                         "{motivationalQuote.text}"
                       </p>
-                      <p className="text-white/80 text-sm font-semibold">
+                      <p className="text-black text-sm font-semibold">
                         — {motivationalQuote.author}
                       </p>
                     </div>
@@ -344,7 +343,7 @@ const Dashboard = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   {/* Premium Card with Modern Design */}
-                    <div className="relative glass-card-user rounded-3xl p-7 shadow-warm-glow hover:shadow-warm-peach transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 border-2 ${stat.borderColor} overflow-hidden">
+                  <div className={`relative glass-card  rounded-3xl p-7 bg-gradient-to-br from-red-200 via-pink-200 to-blue-200 hover:shadow-premium-lg transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 border-2 ${stat.borderColor} overflow-hidden`}>
                     {/* Gradient Overlay on Hover */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${stat.iconBg} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
                     
@@ -382,8 +381,8 @@ const Dashboard = () => {
             })}
           </div>
 
-              {/* Enhanced Quick Actions with Premium Glassmorphism */}
-          <div className="glass-card-user rounded-3xl p-8 shadow-warm-glow mb-10 border-2 border-amber-200/40" data-testid="quick-actions">
+          {/* Enhanced Quick Actions with Modern Design */}
+          <div className="glass-card  rounded-3xl p-8 bg-gradient-to-br from-blue-200 via-emerald-200 to-lime-200 mb-10 border border-white/20 dark:border-gray-700/30" data-testid="quick-actions">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
@@ -442,8 +441,8 @@ const Dashboard = () => {
 
           {/* Enhanced Activity and Recommendations Grid */}
           <div className="grid lg:grid-cols-3 gap-8 mb-10">
-                       {/* Recent Activity with Premium Glassmorphism Cards */}
-            <div className="lg:col-span-2 glass-card-user rounded-3xl p-8 shadow-warm-glow border-2 border-amber-200/40">
+            {/* Recent Activity with Modern Cards */}
+            <div className="lg:col-span-2 glass-card rounded-3xl p-8 bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 border border-white/20 dark:border-gray-700/30">
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
@@ -463,9 +462,8 @@ const Dashboard = () => {
                   return (
                     <div
                       key={index}
-                          className="group relative overflow-hidden p-6 glass-card-user-hover rounded-2xl transition-all duration-500 animate-scale-in border border-amber-100"
+                      className="group relative overflow-hidden p-6 glass-card rounded-2xl hover:shadow-lg transition-all duration-500 animate-scale-in border border-gray-100 dark:border-gray-700/50 hover:-translate-y-1"
                       style={{ animationDelay: `${index * 0.1}s` }}
-                     
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                       
@@ -526,7 +524,7 @@ const Dashboard = () => {
               </div>
 
               {/* Enhanced Recommended Skills */}
-               <div className="glass-card-user rounded-3xl p-8 shadow-warm-glow border-2 border-amber-200/40">
+              <div className="glass-card rounded-3xl p-8 bg-gradient-to-br from-amber-200 via-pink-200 to-purple-200 border border-white/20 dark:border-gray-700/30">
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3">
                   <Sparkles className="w-7 h-7 text-yellow-500" />
                   Recommended Skills
@@ -565,12 +563,12 @@ const Dashboard = () => {
               </div>
 
               {/* Calendar Widget */}
-              <CalendarWidget userId={user?.id} />
+              {/* <CalendarWidget userId={user?.id} /> */}
             </div>
           </div>
 
           {/* Premium Bottom Banner */}
-          <div className="relative overflow-hidden rounded-3xl p-1 shadow-premium-lg group">
+          <div className="relative overflow-hidden rounded-3xl p-1 bg-gradient-to-br from-yellow-200 via-orange-200 to-teal-200 group">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 animate-gradient"></div>
             <div className="relative bg-gradient-to-r from-yellow-500 via-orange-600 to-red-600 rounded-[22px] p-8 text-white">
               <div className="flex items-center justify-between flex-wrap gap-6">

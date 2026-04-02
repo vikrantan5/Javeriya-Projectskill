@@ -150,7 +150,7 @@ const Wallet = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30" data-testid="wallet-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100" data-testid="wallet-page">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -167,7 +167,7 @@ const Wallet = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+              <div key={index} className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`p-3 bg-${stat.color}-100 rounded-xl`}>
                     <Icon className={`w-6 h-6 text-${stat.color}-600`} />
@@ -186,7 +186,7 @@ const Wallet = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             {/* Search */}
             <div className="flex-1 w-full md:w-auto">
@@ -245,8 +245,8 @@ const Wallet = () => {
         </div>
 
         {/* Transactions List */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-6 bg-gradient-to-r from-indigo-600 to-purple-600">
+        <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6 bg-gradient-to-r from-red-600 to-blue-600">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <Clock className="w-6 h-6" />
               Transaction History

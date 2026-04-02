@@ -545,11 +545,11 @@ attachment_urls: uploadedFileUrls,
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="task-marketplace-page">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100 via-pink-100 to-purple-100 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950" data-testid="task-marketplace-page">
       <Navbar />
       
       {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hiddenbg-gradient-to-br from-amber-100 via-pink-100 to-purple-100">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 dark:bg-indigo-500/20 rounded-full blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 dark:bg-purple-500/20 rounded-full blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
       </div>
@@ -605,7 +605,7 @@ attachment_urls: uploadedFileUrls,
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <Briefcase className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</span>
@@ -613,7 +613,7 @@ attachment_urls: uploadedFileUrls,
             <p className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</p>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-green-200 via-emerald-200 to-teal-200 dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <Target className="w-8 h-8 text-green-600 dark:text-green-400" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">{stats.open}</span>
@@ -621,7 +621,7 @@ attachment_urls: uploadedFileUrls,
             <p className="text-sm text-gray-600 dark:text-gray-400">Open Tasks</p>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-yellow-200 via-amber-200 to-orange-200 dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">{stats.accepted}</span>
@@ -629,7 +629,7 @@ attachment_urls: uploadedFileUrls,
             <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-blue-200 via-cyan-200 to-indigo-200 dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <DollarSign className="w-8 h-8 text-green-600 dark:text-green-400" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">₹{stats.totalEarnings}</span>
@@ -670,7 +670,7 @@ attachment_urls: uploadedFileUrls,
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200 dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

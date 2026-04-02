@@ -195,7 +195,7 @@ code {
     
     /* Premium Shadows */
     .shadow-premium {
-        box-shadow: 0 20px 60px -12px rgba(39, 41, 172, 0.25);
+        box-shadow: 0 20px 60px -12px rgba(99, 102, 241, 0.25);
     }
     
     .shadow-premium-lg {
