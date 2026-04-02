@@ -6,7 +6,7 @@ import {
   Shield, AlertTriangle, Search, Download, RefreshCw, UserCheck, UserX,
   Clock, BarChart3, Eye, Mail, Star, Bell, Settings, CreditCard, Flag,
   CheckCircle, XCircle, Wallet, Lock, Unlock, Ban, FileText, DollarSign,
-  ArrowUpRight, ArrowDownRight, Circle
+  ArrowUpRight, ArrowDownRight, Circle, Zap, Sparkles, Activity, TrendingUpDown
 } from 'lucide-react';
 
 import {
@@ -31,14 +31,12 @@ const AdminDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [reportFilter, setReportFilter] = useState('all');
   const [timeRange, setTimeRange] = useState('week');
-   const [activityData, setActivityData] = useState([]);
+  const [activityData, setActivityData] = useState([]);
 
   useEffect(() => {
     loadAdminData();
   }, [activeTab]);
 
-
-  
   useEffect(() => {
     if (activeTab === 'overview') {
       loadActivityData();
@@ -57,7 +55,6 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      // Load common data
       const [analyticsData, usersData] = await Promise.all([
         adminService.getAnalytics().catch(() => null),
         adminService.getAllUsers().catch(() => [])
@@ -66,7 +63,6 @@ const AdminDashboard = () => {
       setAnalytics(analyticsData);
       setUsers(Array.isArray(usersData) ? usersData : []);
 
-      // Load tab-specific data
       switch (activeTab) {
         case 'transactions':
           const transData = await adminService.getAllTransactions().catch(() => []);
@@ -194,8 +190,8 @@ const AdminDashboard = () => {
       icon: Users,
       change: '+12%',
       trend: 'up',
-      color: 'from-blue-500 to-cyan-400',
-      bgColor: 'blue'
+      gradient: 'from-cyan-500 via-cyan-600 to-blue-600',
+      glowColor: 'rgba(6, 182, 212, 0.5)'
     },
     {
       label: 'Total Sessions',
@@ -203,8 +199,8 @@ const AdminDashboard = () => {
       icon: CalendarCheck,
       change: '+8%',
       trend: 'up',
-      color: 'from-green-500 to-emerald-400',
-      bgColor: 'green'
+      gradient: 'from-emerald-500 via-green-600 to-teal-600',
+      glowColor: 'rgba(16, 185, 129, 0.5)'
     },
     {
       label: 'Total Tasks',
@@ -212,8 +208,8 @@ const AdminDashboard = () => {
       icon: Briefcase,
       change: '+15%',
       trend: 'up',
-      color: 'from-purple-500 to-pink-400',
-      bgColor: 'purple'
+      gradient: 'from-purple-500 via-purple-600 to-pink-600',
+      glowColor: 'rgba(139, 92, 246, 0.5)'
     },
     {
       label: 'Revenue',
@@ -221,8 +217,8 @@ const AdminDashboard = () => {
       icon: IndianRupee,
       change: '+23%',
       trend: 'up',
-      color: 'from-yellow-500 to-orange-400',
-      bgColor: 'yellow'
+      gradient: 'from-amber-500 via-orange-600 to-red-600',
+      glowColor: 'rgba(251, 191, 36, 0.5)'
     },
   ];
 
@@ -239,49 +235,73 @@ const AdminDashboard = () => {
 
   if (loading && activeTab !== 'overview') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-purple-950">
+      <div className="min-h-screen bg-admin-gradient">
         <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
-          <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full border-4 border-cyan-500/30 border-t-cyan-500 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl animate-pulse"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-purple-950" data-testid="admin-dashboard-page">
+    <div className="min-h-screen bg-admin-gradient relative overflow-hidden" data-testid="admin-dashboard-page">
+      {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-float-smooth"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float-smooth" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-float-smooth" style={{ animationDelay: '4s' }}></div>
+        
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSg2LDE4MiwyMTIsMC4xKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20"></div>
       </div>
 
       <Navbar />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Enhanced Header */}
-        <div className="flex items-center justify-between mb-10 animate-scale-in">
-          <div>
-            <h1 className="text-5xl font-black text-white mb-3 tracking-tight">Admin Dashboard</h1>
-            <p className="text-gray-300 text-lg font-medium">Manage your platform and monitor performance</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="p-3 glass-card hover:bg-white/15 rounded-2xl text-gray-300 hover:text-white transition-all border border-white/10 transform hover:scale-110">
-              <Bell className="w-6 h-6" />
-            </button>
-            <button className="p-3 glass-card hover:bg-white/15 rounded-2xl text-gray-300 hover:text-white transition-all border border-white/10 transform hover:scale-110">
-              <Settings className="w-6 h-6" />
-            </button>
-            <button
-              onClick={loadAdminData}
-              className="flex items-center gap-3 px-6 py-3 glass-card hover:bg-white/15 rounded-2xl text-white transition-all border border-white/10 font-semibold transform hover:scale-105"
-            >
-              <RefreshCw className="w-5 h-5" />
-              Refresh
-            </button>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 z-10">
+        {/* Premium Header with Neon Glow */}
+        <div className="mb-10 animate-slide-up">
+          <div className="flex items-center justify-between flex-wrap gap-6">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-20 animate-glow-pulse"></div>
+              <div className="relative">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="p-4 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl shadow-neon-cyan">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 tracking-tight">
+                      Admin Dashboard
+                    </h1>
+                    <p className="text-cyan-300/80 text-lg font-semibold mt-1">Command Center • Real-time Analytics</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button className="group relative p-4 glass-card-admin-hover rounded-2xl text-cyan-300 transition-all">
+                <Bell className="w-6 h-6" />
+                <span className="absolute top-2 right-2 w-3 h-3 bg-pink-500 rounded-full animate-pulse"></span>
+              </button>
+              <button className="p-4 glass-card-admin-hover rounded-2xl text-cyan-300">
+                <Settings className="w-6 h-6" />
+              </button>
+              <button
+                onClick={loadAdminData}
+                className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl text-white font-bold shadow-neon-cyan hover:shadow-neon-purple transition-all transform hover:scale-105"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Enhanced Stats Grid */}
+        {/* Premium Stats Grid with Neon Effects */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
@@ -289,69 +309,112 @@ const AdminDashboard = () => {
             return (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-3xl glass-card border border-white/10 p-7 hover:bg-white/15 transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 shadow-premium animate-scale-in"
+                className="group relative animate-fade-in-scale"
                 style={{ animationDelay: `${index * 0.1}s` }}
                 data-testid={`${stat.label.toLowerCase().replace(' ', '-')}-stat`}
               >
-                <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-5">
-                    <div className={`p-4 bg-gradient-to-r ${stat.color} rounded-2xl shadow-premium transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
-                      <Icon className="w-7 h-7 text-white" />
+                {/* Glow Effect */}
+                <div 
+                  className="absolute -inset-1 rounded-3xl blur-xl opacity-30 group-hover:opacity-60 transition-opacity duration-500"
+                  style={{ background: `linear-gradient(135deg, ${stat.glowColor}, transparent)` }}
+                ></div>
+                
+                <div className="relative glass-card-admin rounded-3xl p-7 transform transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-105 overflow-hidden">
+                  {/* Animated Background Gradient */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                  
+                  {/* Shimmer Effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-5">
+                      <div className={`relative p-4 bg-gradient-to-br ${stat.gradient} rounded-2xl shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+                        <Icon className="w-7 h-7 text-white" />
+                        <div className="absolute inset-0 rounded-2xl bg-white/20 blur-md"></div>
+                      </div>
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm border ${
+                        stat.trend === 'up' 
+                          ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+                          : 'bg-red-500/20 border-red-500/30 text-red-400'
+                      }`}>
+                        <TrendIcon className="w-4 h-4" />
+                        <span className="text-xs font-bold">{stat.change}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full backdrop-blur-sm border border-green-500/30">
-                      <TrendIcon className="w-4 h-4 text-green-400" />
-                      <span className="text-xs font-bold text-green-400">{stat.change}</span>
+                    
+                    <p className="text-slate-400 text-sm font-semibold mb-2 uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200">
+                      {stat.value}
+                    </p>
+                    
+                    {/* Progress Bar */}
+                    <div className="mt-5 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full transition-all duration-1000`}
+                        style={{ width: `${Math.min(100, (stat.value / 100) * 100 || 75)}%` }}
+                      ></div>
                     </div>
                   </div>
-                  <p className="text-gray-300 text-sm font-semibold mb-2">{stat.label}</p>
-                  <p className="text-4xl font-black text-white">{stat.value}</p>
                 </div>
               </div>
             );
           })}
         </div>
 
-         {/* Enhanced Tab Navigation */}
+        {/* Enhanced Tab Navigation with Glow */}
         <div className="mb-8 overflow-x-auto scrollbar-hide">
           <div className="flex gap-3 min-w-max">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl transition-all whitespace-nowrap font-semibold transform hover:scale-105 ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-premium'
-                      : 'glass-card text-gray-300 hover:bg-white/15 hover:text-white border border-white/10'
+                  className={`group relative flex items-center gap-3 px-6 py-4 rounded-2xl transition-all whitespace-nowrap font-bold transform hover:scale-105 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white shadow-neon-cyan'
+                      : 'glass-card-admin text-slate-300 hover:text-white'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-sm">{tab.label}</span>
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 blur-xl opacity-50"></div>
+                  )}
+                  <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'animate-bounce-subtle' : ''}`} />
+                  <span className="text-sm relative z-10">{tab.label}</span>
+                  {isActive && (
+                    <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse absolute -top-1 -right-1" />
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
-           {/* Tab Content */}
+
+        {/* Overview Tab - Enhanced Design */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 glass-card backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-premium">
+            {/* Activity Chart Card */}
+            <div className="lg:col-span-2 glass-card-admin rounded-3xl p-8 animate-slide-up">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-white mb-2">Platform Activity</h2>
-                  <p className="text-gray-400">Real-time analytics</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Activity className="w-6 h-6 text-cyan-400" />
+                    <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+                      Platform Activity
+                    </h2>
+                  </div>
+                  <p className="text-slate-400 font-semibold">Real-time analytics dashboard</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   {['day', 'week', 'month'].map((range) => (
                     <button
                       key={range}
                       onClick={() => setTimeRange(range)}
-                      className={`px-4 py-2 rounded-xl text-sm capitalize transition-all font-semibold ${
+                      className={`px-4 py-2 rounded-xl text-sm capitalize font-bold transition-all ${
                         timeRange === range
-                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                          : 'glass-card text-gray-400 hover:bg-white/10 border border-white/10'
+                          ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-neon-cyan'
+                          : 'glass-card-admin text-slate-400 hover:text-white'
                       }`}
                     >
                       {range}
@@ -359,45 +422,50 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               </div>
-                         <div className="h-64 flex items-center justify-center rounded-xl">
+              
+              <div className="h-64 rounded-2xl p-4 bg-slate-900/30 border border-cyan-500/10">
                 {activityData.length === 0 ? (
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500">Loading analytics...</p>
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <BarChart3 className="w-16 h-16 text-cyan-500/30 mx-auto mb-4 animate-pulse" />
+                      <p className="text-slate-500 font-semibold">Loading analytics...</p>
+                    </div>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={activityData}>
                       <defs>
                         <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
                           <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
                           <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="label" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                      <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                      <XAxis dataKey="label" stroke="#64748b" style={{ fontSize: '12px', fontWeight: 600 }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '12px', fontWeight: 600 }} />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: 'rgba(17, 24, 39, 0.95)', 
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          borderRadius: '8px',
-                          color: '#fff'
+                          backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          borderRadius: '12px',
+                          color: '#fff',
+                          fontWeight: 600
                         }}
                       />
-                      <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                      <Legend wrapperStyle={{ color: '#94a3b8', fontWeight: 600 }} />
                       <Area 
                         type="monotone" 
                         dataKey="users" 
-                        stroke="#6366f1" 
+                        stroke="#06b6d4" 
+                        strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#colorUsers)" 
                         name="New Users"
@@ -406,6 +474,7 @@ const AdminDashboard = () => {
                         type="monotone" 
                         dataKey="tasks" 
                         stroke="#8b5cf6" 
+                        strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#colorTasks)" 
                         name="Tasks"
@@ -414,6 +483,7 @@ const AdminDashboard = () => {
                         type="monotone" 
                         dataKey="sessions" 
                         stroke="#10b981" 
+                        strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#colorSessions)" 
                         name="Sessions"
@@ -424,66 +494,131 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="glass-card backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-premium">
-              <h2 className="text-2xl font-black text-white mb-2">Quick Actions</h2>
-              <p className="text-gray-400 mb-8">Manage platform</p>
+            {/* Quick Actions Sidebar */}
+            <div className="glass-card-admin rounded-3xl p-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-6 h-6 text-yellow-400 animate-pulse" />
+                <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+                  Quick Actions
+                </h2>
+              </div>
+              <p className="text-slate-400 mb-8 font-semibold">Manage platform</p>
+              
               <div className="space-y-4">
                 {[
-                  { icon: Users, label: 'View All Users', action: () => setActiveTab('users'), color: 'from-blue-500 to-cyan-400', badge: null },
-                  { icon: Lock, label: 'Escrow Payments', action: () => setActiveTab('escrow'), color: 'from-purple-500 to-pink-400', badge: null },
-                  { icon: Flag, label: 'Review Reports', action: () => setActiveTab('reports'), color: 'from-yellow-500 to-orange-400', badge: reports.filter(r => r.status === 'pending').length },
-                  { icon: Ban, label: 'Banned Users', action: () => setActiveTab('banned'), color: 'from-red-500 to-pink-500', badge: null },
+                  { 
+                    icon: Users, 
+                    label: 'View All Users', 
+                    action: () => setActiveTab('users'), 
+                    gradient: 'from-cyan-500 to-blue-600',
+                    badge: null 
+                  },
+                  { 
+                    icon: Lock, 
+                    label: 'Escrow Payments', 
+                    action: () => setActiveTab('escrow'), 
+                    gradient: 'from-purple-500 to-pink-600',
+                    badge: null 
+                  },
+                  { 
+                    icon: Flag, 
+                    label: 'Review Reports', 
+                    action: () => setActiveTab('reports'), 
+                    gradient: 'from-amber-500 to-orange-600',
+                    badge: reports.filter(r => r.status === 'pending').length 
+                  },
+                  { 
+                    icon: Ban, 
+                    label: 'Banned Users', 
+                    action: () => setActiveTab('banned'), 
+                    gradient: 'from-red-500 to-pink-500',
+                    badge: null 
+                  },
                 ].map((action, index) => {
                   const Icon = action.icon;
                   return (
                     <button
                       key={index}
                       onClick={action.action}
-                      className="w-full flex items-center justify-between p-5 glass-card hover:bg-white/15 rounded-2xl transition-all group transform hover:-translate-y-1 border border-white/10"
+                      className="w-full group relative overflow-hidden"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 bg-gradient-to-r ${action.color} rounded-xl transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
-                          <Icon className="w-5 h-5 text-white" />
+                      <div className="absolute inset-0 bg-gradient-to-r ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+                      <div className="relative flex items-center justify-between p-5 glass-card-admin-hover rounded-2xl">
+                        <div className="flex items-center gap-4">
+                          <div className={`p-3 bg-gradient-to-br ${action.gradient} rounded-xl shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="text-slate-300 group-hover:text-white transition-colors font-bold">
+                            {action.label}
+                          </span>
                         </div>
-                        <span className="text-gray-300 group-hover:text-white transition-colors font-semibold">
-                          {action.label}
-                        </span>
+                        {action.badge && action.badge > 0 && (
+                          <span className="px-3 py-1.5 bg-red-500/30 text-red-300 text-xs rounded-full font-bold border border-red-500/50 animate-pulse">
+                            {action.badge}
+                          </span>
+                        )}
                       </div>
-                      {action.badge && action.badge > 0 && (
-                        <span className="px-3 py-1.5 bg-red-500/30 text-red-300 text-xs rounded-full font-bold border border-red-500/50">
-                          {action.badge}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
+              </div>
+              
+              {/* Platform Status */}
+              <div className="mt-8 p-6 glass-card-admin rounded-2xl border border-emerald-500/20">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-slate-400 font-semibold">Platform Status</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span className="text-emerald-400 text-sm font-bold">All Systems Operational</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-semibold">API Response</span>
+                    <span className="text-cyan-400 font-bold">32ms</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-semibold">Database</span>
+                    <span className="text-emerald-400 font-bold">Healthy</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-semibold">Uptime</span>
+                    <span className="text-purple-400 font-bold">99.9%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h2 className="text-xl font-bold text-white">User Management</h2>
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+                    User Management
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Manage all platform users</p>
+                </div>
 
                 <div className="flex flex-col md:flex-row gap-3">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500" />
                     <input
                       type="text"
                       placeholder="Search users..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="pl-11 pr-4 py-3 bg-slate-900/50 border border-cyan-500/20 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-semibold"
                     />
                   </div>
 
                   <select
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
-                    className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="px-4 py-3 bg-slate-900/50 border border-cyan-500/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold"
                   >
                     <option value="all">All Roles</option>
                     <option value="admin">Admin</option>
@@ -494,7 +629,7 @@ const AdminDashboard = () => {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="px-4 py-3 bg-slate-900/50 border border-cyan-500/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold"
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
@@ -506,63 +641,68 @@ const AdminDashboard = () => {
             </div>
 
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-16">
-                <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No users found</p>
+              <div className="text-center py-20">
+                <Users className="w-20 h-20 text-cyan-500/30 mx-auto mb-4" />
+                <p className="text-slate-400 text-lg font-semibold">No users found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full" data-testid="users-table">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">User</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Contact</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Role & Status</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Stats</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">User</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Contact</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Role & Status</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Stats</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-medium">
-                                {user.username?.[0]?.toUpperCase() || 'U'}
-                              </span>
+                    {filteredUsers.map((user, idx) => (
+                      <tr key={user.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
+                        <td className="py-5 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <span className="text-white font-black text-lg">
+                                  {user.username?.[0]?.toUpperCase() || 'U'}
+                                </span>
+                              </div>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-slate-900"></div>
                             </div>
                             <div>
-                              <div className="font-medium text-white">{user.full_name || user.username}</div>
-                              <div className="text-sm text-gray-400">@{user.username}</div>
+                              <div className="font-bold text-white group-hover:text-cyan-400 transition-colors">
+                                {user.full_name || user.username}
+                              </div>
+                              <div className="text-sm text-slate-500 font-semibold">@{user.username}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-2 text-sm text-gray-300">
-                            <Mail className="w-4 h-4 text-gray-500" />
+                        <td className="py-5 px-6">
+                          <div className="flex items-center gap-2 text-sm text-slate-400 font-semibold">
+                            <Mail className="w-4 h-4 text-cyan-500" />
                             {user.email}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           <div className="space-y-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-purple-100 text-purple-600 border-purple-200">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
                               <Shield className="w-3 h-3" />
                               {user.role}
                             </span>
                             <div>
                               {user.is_banned ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-600 border-red-200">
+                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/30">
                                   <UserX className="w-3 h-3" />
                                   Banned
                                 </span>
                               ) : user.is_active ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-600 border-green-200">
+                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                                   <UserCheck className="w-3 h-3" />
                                   Active
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-gray-100 text-gray-600 border-gray-200">
+                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-slate-500/20 text-slate-300 border border-slate-500/30">
                                   <Clock className="w-3 h-3" />
                                   Inactive
                                 </span>
@@ -570,31 +710,31 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
+                        <td className="py-5 px-6">
+                          <div className="flex items-center gap-4">
                             <div className="text-center">
-                              <div className="text-sm font-medium text-white">{user.total_sessions || 0}</div>
-                              <div className="text-xs text-gray-500">Sessions</div>
+                              <div className="text-sm font-bold text-cyan-400">{user.total_sessions || 0}</div>
+                              <div className="text-xs text-slate-500 font-semibold">Sessions</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-sm font-medium text-white">{user.total_tasks || 0}</div>
-                              <div className="text-xs text-gray-500">Tasks</div>
+                              <div className="text-sm font-bold text-purple-400">{user.total_tasks || 0}</div>
+                              <div className="text-xs text-slate-500 font-semibold">Tasks</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-sm font-medium text-white flex items-center gap-1">
+                              <div className="text-sm font-bold text-yellow-400 flex items-center gap-1">
                                 {user.average_rating?.toFixed(1) || '0.0'}
-                                <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                <Star className="w-3 h-3 fill-current" />
                               </div>
-                              <div className="text-xs text-gray-500">Rating</div>
+                              <div className="text-xs text-slate-500 font-semibold">Rating</div>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           <div className="flex items-center gap-2">
                             {!user.is_banned ? (
                               <button
                                 onClick={() => handleBanUser(user.id, user.username)}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl text-sm font-bold transition-all border border-red-500/20 hover:border-red-500/40"
                                 data-testid="ban-user-button"
                               >
                                 <AlertTriangle className="w-4 h-4" />
@@ -603,7 +743,7 @@ const AdminDashboard = () => {
                             ) : (
                               <button
                                 onClick={() => handleUnbanUser(user.id, user.username)}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 rounded-xl text-sm font-bold transition-all border border-emerald-500/20 hover:border-emerald-500/40"
                               >
                                 <UserCheck className="w-4 h-4" />
                                 Unban
@@ -620,75 +760,85 @@ const AdminDashboard = () => {
           </div>
         )}
 
+      {/* Escrow Payments Tab */}
         {activeTab === 'escrow' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Escrow Payments Management</h2>
-              <p className="text-gray-400 text-sm mt-1">Manage payments held in escrow</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <Lock className="w-6 h-6 text-purple-400" />
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                    Escrow Payments Management
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Manage payments held in escrow</p>
+                </div>
+              </div>
             </div>
 
             {escrowPayments.length === 0 ? (
-              <div className="text-center py-16">
-                <Lock className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No escrow payments found</p>
+              <div className="text-center py-20">
+                <Lock className="w-20 h-20 text-purple-500/30 mx-auto mb-4 animate-pulse" />
+                <p className="text-slate-400 text-lg font-semibold">No escrow payments found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Payment ID</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Amount</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Payer</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Payee</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Task</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Status</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Payment ID</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Amount</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Payer</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Payee</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Task</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Status</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-purple-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {escrowPayments.map((payment) => (
-                      <tr key={payment.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <code className="text-xs text-indigo-400">{payment.id.slice(0, 8)}...</code>
+                      <tr key={payment.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <code className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg">
+                            {payment.id.slice(0, 8)}...
+                          </code>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-white font-medium">₹{payment.amount}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-white font-bold text-lg">₹{payment.amount}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{payment.payer?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{payment.payer?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{payment.payee?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{payment.payee?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300 text-sm">{payment.task?.title || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">{payment.task?.title || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="py-5 px-6">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
                             payment.escrow_status === 'ESCROW_HELD'
-                              ? 'bg-yellow-500/20 text-yellow-400'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                               : payment.escrow_status === 'RELEASED_TEST'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-blue-500/20 text-blue-400'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                           }`}>
                             {payment.escrow_status}
                           </span>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           <div className="flex items-center gap-2">
                             {payment.escrow_status === 'ESCROW_HELD' && (
                               <>
                                 <button
                                   onClick={() => handleForceRelease(payment.id)}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm transition-colors"
+                                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-bold transition-all border border-emerald-500/20"
                                 >
                                   <Unlock className="w-4 h-4" />
                                   Release
                                 </button>
                                 <button
                                   onClick={() => handleForceRefund(payment.id)}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg text-sm transition-colors"
+                                  className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-xl text-sm font-bold transition-all border border-orange-500/20"
                                 >
                                   <ArrowDownRight className="w-4 h-4" />
                                   Refund
@@ -706,53 +856,65 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Refunds Tab */}
         {activeTab === 'refunds' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Refunds Management</h2>
-              <p className="text-gray-400 text-sm mt-1">View all refunded payments</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <ArrowDownRight className="w-6 h-6 text-orange-400" />
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400">
+                    Refunds Management
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">View all refunded payments</p>
+                </div>
+              </div>
             </div>
 
             {refunds.length === 0 ? (
-              <div className="text-center py-16">
-                <ArrowDownRight className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No refunds found</p>
+              <div className="text-center py-20">
+                <ArrowDownRight className="w-20 h-20 text-orange-500/30 mx-auto mb-4 animate-pulse" />
+                <p className="text-slate-400 text-lg font-semibold">No refunds found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Payment ID</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Amount</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Refunded To</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reason</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Refunded At</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Status</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Payment ID</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Amount</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Refunded To</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Reason</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Refunded At</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-orange-400 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {refunds.map((refund) => (
-                      <tr key={refund.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <code className="text-xs text-indigo-400">{refund.id.slice(0, 8)}...</code>
+                      <tr key={refund.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <code className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg">
+                            {refund.id.slice(0, 8)}...
+                          </code>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-white font-medium">₹{refund.amount}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-white font-bold text-lg">₹{refund.amount}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{refund.payer?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{refund.payer?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm max-w-xs truncate">{refund.refund_reason || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm max-w-xs truncate font-semibold">
+                            {refund.refund_reason || 'N/A'}
+                          </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">
                             {refund.refunded_at ? new Date(refund.refunded_at).toLocaleDateString() : 'N/A'}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400">
+                        <td className="py-5 px-6">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
                             {refund.escrow_status || 'REFUNDED'}
                           </span>
                         </td>
@@ -765,18 +927,24 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Reports Tab */}
         {activeTab === 'reports' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-white">Reports Management</h2>
-                  <p className="text-gray-400 text-sm mt-1">Review and resolve user reports</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <Flag className="w-6 h-6 text-yellow-400" />
+                  <div>
+                    <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
+                      Reports Management
+                    </h2>
+                    <p className="text-slate-400 text-sm mt-1">Review and resolve user reports</p>
+                  </div>
                 </div>
                 <select
                   value={reportFilter}
                   onChange={(e) => setReportFilter(e.target.value)}
-                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="px-4 py-3 bg-slate-900/50 border border-yellow-500/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 font-semibold"
                 >
                   <option value="all">All Reports</option>
                   <option value="pending">Pending</option>
@@ -787,62 +955,62 @@ const AdminDashboard = () => {
             </div>
 
             {filteredReports.length === 0 ? (
-              <div className="text-center py-16">
-                <Flag className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No reports found</p>
+              <div className="text-center py-20">
+                <Flag className="w-20 h-20 text-yellow-500/30 mx-auto mb-4 animate-pulse" />
+                <p className="text-slate-400 text-lg font-semibold">No reports found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reporter</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Type</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reason</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Description</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Status</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Reporter</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Type</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Reason</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Description</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Status</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-yellow-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredReports.map((report) => (
-                      <tr key={report.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{report.reporter?.username || 'N/A'}</div>
+                      <tr key={report.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{report.reporter?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">{report.report_type || 'general'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">{report.report_type || 'general'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">{report.reason}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">{report.reason}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm max-w-xs truncate">{report.description}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm max-w-xs truncate font-semibold">{report.description}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="py-5 px-6">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
                             report.status === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-400'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                               : report.status === 'resolved'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-gray-500/20 text-gray-400'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                           }`}>
                             {report.status}
                           </span>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           {report.status === 'pending' && (
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleResolveReport(report.id, 'resolved')}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-bold transition-all border border-emerald-500/20"
                               >
                                 <CheckCircle className="w-4 h-4" />
                                 Resolve
                               </button>
                               <button
                                 onClick={() => handleResolveReport(report.id, 'dismissed')}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 rounded-lg text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-500/10 hover:bg-slate-500/20 text-slate-400 rounded-xl text-sm font-bold transition-all border border-slate-500/20"
                               >
                                 <XCircle className="w-4 h-4" />
                                 Dismiss
@@ -859,68 +1027,74 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Disputes Tab */}
         {activeTab === 'disputes' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Disputes Management</h2>
-              <p className="text-gray-400 text-sm mt-1">Resolve payment and task disputes</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" />
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-400">
+                    Disputes Management
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Resolve payment and task disputes</p>
+                </div>
+              </div>
             </div>
 
             {disputes.length === 0 ? (
-              <div className="text-center py-16">
-                <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No disputes found</p>
+              <div className="text-center py-20">
+                <AlertTriangle className="w-20 h-20 text-red-500/30 mx-auto mb-4 animate-pulse" />
+                <p className="text-slate-400 text-lg font-semibold">No disputes found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reporter</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reported User</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Type</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Description</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Status</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Reporter</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Reported User</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Type</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Description</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Status</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {disputes.map((dispute) => (
-                      <tr key={dispute.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{dispute.reporter?.username || 'N/A'}</div>
+                      <tr key={dispute.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{dispute.reporter?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{dispute.reported_user?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{dispute.reported_user?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">{dispute.report_type}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">{dispute.report_type}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm max-w-xs truncate">{dispute.description}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm max-w-xs truncate font-semibold">{dispute.description}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="py-5 px-6">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
                             dispute.status === 'pending'
-                              ? 'bg-red-500/20 text-red-400'
+                              ? 'bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse'
                               : dispute.status === 'resolved'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-gray-500/20 text-gray-400'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                           }`}>
                             {dispute.status}
                           </span>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           {dispute.status === 'pending' && (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleResolveReport(dispute.id, 'resolved')}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm transition-colors"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                                Resolve
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => handleResolveReport(dispute.id, 'resolved')}
+                              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-bold transition-all border border-emerald-500/20"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Resolve
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -932,67 +1106,75 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Banned Users Tab */}
         {activeTab === 'banned' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Banned Users</h2>
-              <p className="text-gray-400 text-sm mt-1">Manage banned user accounts</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <Ban className="w-6 h-6 text-red-400" />
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-400">
+                    Banned Users
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">Manage banned user accounts</p>
+                </div>
+              </div>
             </div>
 
             {bannedUsers.length === 0 ? (
-              <div className="text-center py-16">
-                <Ban className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No banned users</p>
+              <div className="text-center py-20">
+                <Ban className="w-20 h-20 text-red-500/30 mx-auto mb-4" />
+                <p className="text-slate-400 text-lg font-semibold">No banned users</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">User</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Email</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Ban Reason</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Reports</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Banned At</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">User</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Email</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Ban Reason</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Reports</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Banned At</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-red-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bannedUsers.map((user) => (
-                      <tr key={user.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-medium">
+                      <tr key={user.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                              <span className="text-white font-black text-lg">
                                 {user.username?.[0]?.toUpperCase() || 'U'}
                               </span>
                             </div>
                             <div>
-                              <div className="font-medium text-white">{user.full_name || user.username}</div>
-                              <div className="text-sm text-gray-400">@{user.username}</div>
+                              <div className="font-bold text-white">{user.full_name || user.username}</div>
+                              <div className="text-sm text-slate-500 font-semibold">@{user.username}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{user.email}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{user.email}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm max-w-xs truncate">{user.ban_reason || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm max-w-xs truncate font-semibold">{user.ban_reason || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                        <td className="py-5 px-6">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
                             {user.report_count || 0} reports
                           </span>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">
                             {user.banned_at ? new Date(user.banned_at).toLocaleDateString() : 'N/A'}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6">
                           <button
                             onClick={() => handleUnbanUser(user.id, user.username)}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-bold transition-all border border-emerald-500/20"
                           >
                             <UserCheck className="w-4 h-4" />
                             Unban
@@ -1007,59 +1189,69 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Transactions Tab */}
         {activeTab === 'transactions' && (
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-6 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">All Transactions</h2>
-              <p className="text-gray-400 text-sm mt-1">View all platform transactions</p>
+          <div className="glass-card-admin rounded-3xl overflow-hidden animate-slide-up">
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-6 h-6 text-cyan-400" />
+                <div>
+                  <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                    All Transactions
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">View all platform transactions</p>
+                </div>
+              </div>
             </div>
 
             {transactions.length === 0 ? (
-              <div className="text-center py-16">
-                <CreditCard className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No transactions found</p>
+              <div className="text-center py-20">
+                <CreditCard className="w-20 h-20 text-cyan-500/30 mx-auto mb-4 animate-pulse" />
+                <p className="text-slate-400 text-lg font-semibold">No transactions found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Transaction ID</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Amount</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">From</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">To</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Status</th>
-                      <th className="text-left py-4 px-6 text-xs font-medium text-gray-400 uppercase">Date</th>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Transaction ID</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Amount</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">From</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">To</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Status</th>
+                      <th className="text-left py-5 px-6 text-xs font-bold text-cyan-400 uppercase tracking-wider">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.map((transaction) => (
-                      <tr key={transaction.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-6">
-                          <code className="text-xs text-indigo-400">{transaction.id.slice(0, 8)}...</code>
+                      <tr key={transaction.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-5 px-6">
+                          <code className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg">
+                            {transaction.id.slice(0, 8)}...
+                          </code>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-white font-medium">₹{transaction.amount}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-white font-bold text-lg">₹{transaction.amount}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{transaction.payer?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{transaction.payer?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-300">{transaction.payee?.username || 'N/A'}</div>
+                        <td className="py-5 px-6">
+                          <div className="text-slate-300 font-semibold">{transaction.payee?.username || 'N/A'}</div>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="py-5 px-6">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
                             transaction.status === 'completed'
-                              ? 'bg-green-500/20 text-green-400'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : transaction.status === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-gray-500/20 text-gray-400'
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
                           }`}>
                             {transaction.status}
                           </span>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="text-gray-400 text-sm">
+                        <td className="py-5 px-6">
+                          <div className="text-slate-400 text-sm font-semibold">
                             {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString() : 'N/A'}
                           </div>
                         </td>
@@ -1071,6 +1263,7 @@ const AdminDashboard = () => {
             )}
           </div>
         )}
+        
       </div>
     </div>
   );

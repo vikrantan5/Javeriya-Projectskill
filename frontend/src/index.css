@@ -140,16 +140,53 @@ code {
         background-attachment: fixed;
     }
     
-    .bg-admin-gradient {
-        /* background-image: url('/admin-bg.jpg'); */
+    /* Background Images */
+    .bg-user-gradient {
+        background: linear-gradient(135deg, #7A828A 0%, #B6BDC2 50%, #E9EFEF 100%);
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
     
+    /* Premium Dark Bluish-Grey Gradient for Admin */
+    .bg-admin-gradient {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #020617 100%);
+        background-size: 400% 400%;
+        background-position: center;
+        background-attachment: fixed;
+        animation: gradient-shift 15s ease infinite;
+    }
+    
+    @keyframes gradient-shift {
+        0%, 100% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+    }
+    
     /* Glassmorphism */
     .glass-card {
         @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border border-white/20 dark:border-gray-700/30;
+    }
+
+
+       /* Premium Glass Card for Admin */
+    .glass-card-admin {
+        @apply bg-slate-800/40 backdrop-blur-2xl border border-cyan-500/20;
+        box-shadow: 0 8px 32px 0 rgba(6, 182, 212, 0.15);
+    }
+    
+    .glass-card-admin-hover {
+        @apply bg-slate-800/40 backdrop-blur-2xl border border-cyan-500/20 hover:border-cyan-400/40 hover:bg-slate-700/50;
+        box-shadow: 0 8px 32px 0 rgba(6, 182, 212, 0.15);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .glass-card-admin-hover:hover {
+        box-shadow: 0 20px 60px 0 rgba(6, 182, 212, 0.3), 0 0 40px rgba(139, 92, 246, 0.2);
+        transform: translateY(-4px);
     }
     
     /* Premium Shadows */
@@ -159,6 +196,19 @@ code {
     
     .shadow-premium-lg {
         box-shadow: 0 30px 70px -15px rgba(99, 102, 241, 0.35);
+    }
+
+       /* Admin Neon Shadows */
+    .shadow-neon-cyan {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
+    }
+    
+    .shadow-neon-purple {
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+    }
+    
+    .shadow-neon-pink {
+        box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2);
     }
     
     /* Smooth Animations */
@@ -189,5 +239,91 @@ code {
     .animate-scale-in {
         animation: scale-in 0.5s ease-out forwards;
     }
+
+     /* Advanced Admin Animations */
+    @keyframes glow-pulse {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.8), 0 0 60px rgba(139, 92, 246, 0.4);
+        }
+    }
+    
+    .animate-glow-pulse {
+        animation: glow-pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes slide-up {
+        0% {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .animate-slide-up {
+        animation: slide-up 0.6s ease-out forwards;
+    }
+    
+    @keyframes shimmer {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+    
+    .animate-shimmer {
+        background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.2), transparent);
+        background-size: 1000px 100%;
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes bounce-subtle {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+    
+    .animate-bounce-subtle {
+        animation: bounce-subtle 2s ease-in-out infinite;
+    }
+    
+    @keyframes rotate-slow {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .animate-rotate-slow {
+        animation: rotate-slow 20s linear infinite;
+    }
+    
+    @keyframes fade-in-scale {
+        0% {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .animate-fade-in-scale {
+        animation: fade-in-scale 0.5s ease-out forwards;
+    }
+
 
 }
