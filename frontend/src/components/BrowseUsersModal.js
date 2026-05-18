@@ -10,6 +10,8 @@ const BrowseUsersModal = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sendingRequest, setSendingRequest] = useState({});
 
+
+  
   useEffect(() => {
     if (isOpen) {
       loadUsers();
